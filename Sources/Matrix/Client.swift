@@ -84,7 +84,7 @@ public class Client: ObservableObject {
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
-        let bodyObject = CreateRoomBody(roomAliasName: "Tutorial")
+        let bodyObject = CreateRoomBody(name: name, roomAliasName: nil)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
         URLSession.shared.dataTask(with: request) { data, response, error in
@@ -141,7 +141,10 @@ public class Client: ObservableObject {
                 let joinedRooms = response.rooms.joined
                 let rooms: [Room] = joinedRooms.keys.map { key in
                     let eventObjects = joinedRooms[key]!.timeline.events
-                    let events = eventObjects.map { Event(id: $0.eventID, body: $0.content["body"] ?? "Unknown Event", sender: $0.sender) }
+                    let events: [Event] = eventObjects.compactMap { event in
+                        guard let body = event.content["body"] else { return nil }
+                        return Event(id: event.eventID, body: body, sender: event.sender)
+                    }
                     return Room(id: key, events: events)
                 }
                 
