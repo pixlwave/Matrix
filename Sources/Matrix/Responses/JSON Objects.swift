@@ -24,6 +24,12 @@ struct LoginUserBody: Codable {
     let type: String
     let username: String
     let password: String
+    
+    enum CodingKeys: String, CodingKey {
+        case type
+        case username = "user"
+        case password
+    }
 }
 
 

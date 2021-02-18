@@ -4,20 +4,26 @@ public class Client: ObservableObject {
     
     let host: String
     let port: Int
-    var accessToken: String?
+    @KeychainItem(account: "uk.pixlwave.Matrix") var accessToken: String?
+    
+    public enum Status {
+        case signedOut, syncing, idle
+    }
+    
+    @Published public private(set) var status: Status = .signedOut
     
     @Published public private(set) var userID = ""
     @Published public private(set) var homeserver = ""
     
     @Published public private(set) var rooms: [Room] = []
     
-    public init(host: String, port: Int, accessToken: String? = nil) {
+    public init(host: String, port: Int) {
         self.host = host
         self.port = port
-        self.accessToken = accessToken
+        if accessToken != nil { fullSync() }
     }
     
-    private func urlComponents(path: String = "", queryItems: [URLQueryItem]? = nil) -> URLComponents {
+    private func urlComponents(path: String, queryItems: [URLQueryItem]? = nil) -> URLComponents {
         var components = URLComponents()
         components.scheme = "http"
         components.host = host
@@ -49,10 +55,10 @@ public class Client: ObservableObject {
         }.resume()
     }
     
-    public func login(username: String, password: String) {
+    public func login(username: String, password: String, homeserver: String) {
         let components = urlComponents(path: "/_matrix/client/r0/login")
         var request = URLRequest(url: components.url!)
-        request.httpMethod = "GET"
+        request.httpMethod = "POST"
         let bodyObject = LoginUserBody(type: "m.login.password", username: username, password: password)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
@@ -62,9 +68,11 @@ public class Client: ObservableObject {
             
             switch result {
             case .success(let response):
-                self.userID = response.userID
-                self.homeserver = response.homeServer
-                self.accessToken = response.accessToken
+                DispatchQueue.main.async {
+                    self.userID = response.userID
+                    self.homeserver = response.homeServer
+                    self.accessToken = response.accessToken
+                }
             case .failure(let errorResponse):
                 print(errorResponse)
             }
@@ -115,14 +123,16 @@ public class Client: ObservableObject {
     }
     
     public func fullSync() {
-        var components = urlComponents()
-        components.path = "/_matrix/client/r0/sync"
+        status = .syncing
+        
+        var components = urlComponents(path: "/_matrix/client/r0/sync")
         components.queryItems = [
             URLQueryItem(name: "full_state", value: "true"),
             URLQueryItem(name: "access_token", value: accessToken)
         ]
                 
         URLSession.shared.dataTask(with: components.url!) { data, response, error in
+            defer { DispatchQueue.main.async { self.status = .idle } }
             guard error == nil, let data = data else { return }
             let result = data.decode(SyncResponse.self)
             
@@ -145,8 +155,7 @@ public class Client: ObservableObject {
     }
     
     public func getLastEvent() {
-        var components = urlComponents()
-        components.path = "/_matrix/client/r0/sync"
+        var components = urlComponents(path: "/_matrix/client/r0/sync")
         components.queryItems = [
             URLQueryItem(name: "filter", value: "{\"room\":{\"timeline\":{\"limit\":1}}}"),
             URLQueryItem(name: "access_token", value: accessToken)
