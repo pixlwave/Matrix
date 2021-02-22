@@ -8,9 +8,7 @@ public class Client: ObservableObject {
     
     @KeychainItem(account: "uk.pixlwave.Matrix") var accessToken: String?
     
-    public enum Status {
-        case signedOut, syncing, idle
-    }
+    public enum Status { case signedOut, syncing, idle }
     
     @Published public private(set) var status: Status = .signedOut
     
@@ -18,8 +16,10 @@ public class Client: ObservableObject {
     
     @Published public private(set) var rooms: [Room] = []
     
+    private var nextBatch: String?
+    
     public init() {
-        homeserver = Homeserver.load ?? .default
+        homeserver = Homeserver.saved ?? .default
         if accessToken != nil { fullSync() }
     }
     
@@ -173,6 +173,51 @@ public class Client: ObservableObject {
                 
                 DispatchQueue.main.async {
                     self.rooms = rooms
+                    self.nextBatch = response.nextBatch
+                    self.longPoll()
+                }
+            case .failure(let errorResponse):
+                print(errorResponse)
+            }
+        }
+        .resume()
+    }
+    
+    public func longPoll() {
+        var components = urlComponents(path: "/_matrix/client/r0/sync")
+        components.queryItems = [
+            URLQueryItem(name: "since", value: nextBatch),
+            URLQueryItem(name: "timeout", value: "5000"),
+            URLQueryItem(name: "access_token", value: accessToken)
+        ]
+                
+        URLSession.shared.dataTask(with: components.url!) { data, response, error in
+            guard error == nil, let data = data else { return }
+            let result = data.decode(SyncResponse.self)
+            
+            switch result {
+            case .success(let response):
+                let joinedRooms = response.rooms.joined
+                let rooms: [Room] = joinedRooms.keys.map { key in
+                    let eventObjects = joinedRooms[key]!.timeline.events
+                    let events: [Event] = eventObjects.compactMap { event in
+                        guard let body = event.content["body"] else { return nil }
+                        return Event(id: event.eventID, body: body, sender: event.sender)
+                    }
+                    return Room(id: key, events: events)
+                }
+                
+                DispatchQueue.main.async {
+                    rooms.forEach { room in
+                        if let index = self.rooms.firstIndex(where: { room.id == $0.id }) {
+                            self.rooms[index].events.append(contentsOf: room.events)
+                        } else {
+                            self.rooms.append(room)
+                        }
+                    }
+                    
+                    self.nextBatch = response.nextBatch
+                    self.longPoll()
                 }
             case .failure(let errorResponse):
                 print(errorResponse)

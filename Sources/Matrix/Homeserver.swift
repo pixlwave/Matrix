@@ -2,6 +2,7 @@ import Foundation
 
 public struct Homeserver: Codable {
     let components: URLComponents
+    public var address: String? { components.url?.absoluteString }
     
     init(scheme: String, host: String, port: Int) {
         var components = URLComponents()
@@ -29,7 +30,7 @@ public struct Homeserver: Codable {
         UserDefaults.standard.set(data, forKey: "homeserver")
     }
     
-    static var load: Homeserver? {
+    static var saved: Homeserver? {
         guard let data = UserDefaults.standard.data(forKey: "homeserver") else { return nil }
         return try? JSONDecoder().decode(Homeserver.self, from: data)
     }

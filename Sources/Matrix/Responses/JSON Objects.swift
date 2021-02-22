@@ -89,13 +89,18 @@ struct SendMessageResponse: Codable {
 
 
 struct SyncResponse: Codable {
-    let next_batch: String
+    let nextBatch: String
     let rooms: Rooms
 //    let presence: Presence
 //    let account_data: AccountData
 //    let to_device: ToDevice
 //    let device_lists: DeviceLists
 //    let device_one_time_keys_count: OneTimeKeysCount
+    
+    enum CodingKeys: String, CodingKey {
+        case nextBatch = "next_batch"
+        case rooms
+    }
     
     struct Rooms: Codable {
         let joined: [String: JoinedRooms]
