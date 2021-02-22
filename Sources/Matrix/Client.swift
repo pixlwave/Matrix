@@ -2,8 +2,10 @@ import Foundation
 
 public class Client: ObservableObject {
     
-    let host: String
-    let port: Int
+    public var homeserver: Homeserver {
+        didSet { homeserver.save() }
+    }
+    
     @KeychainItem(account: "uk.pixlwave.Matrix") var accessToken: String?
     
     public enum Status {
@@ -13,21 +15,16 @@ public class Client: ObservableObject {
     @Published public private(set) var status: Status = .signedOut
     
     @Published public private(set) var userID = ""
-    @Published public private(set) var homeserver = ""
     
     @Published public private(set) var rooms: [Room] = []
     
-    public init(host: String, port: Int) {
-        self.host = host
-        self.port = port
+    public init() {
+        homeserver = Homeserver.load ?? .default
         if accessToken != nil { fullSync() }
     }
     
     private func urlComponents(path: String, queryItems: [URLQueryItem]? = nil) -> URLComponents {
-        var components = URLComponents()
-        components.scheme = "http"
-        components.host = host
-        components.port = port
+        var components = homeserver.components
         components.path = path
         components.queryItems = queryItems
         return components
@@ -47,15 +44,16 @@ public class Client: ObservableObject {
             switch result {
             case .success(let response):
                 self.userID = response.userID
-                self.homeserver = response.homeServer
+//                self.homeserver = response.homeServer
                 self.accessToken = response.accessToken
             case .failure(let errorResponse):
                 print(errorResponse)
             }
-        }.resume()
+        }
+        .resume()
     }
     
-    public func login(username: String, password: String, homeserver: String) {
+    public func login(username: String, password: String) {
         let components = urlComponents(path: "/_matrix/client/r0/login")
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
@@ -70,13 +68,36 @@ public class Client: ObservableObject {
             case .success(let response):
                 DispatchQueue.main.async {
                     self.userID = response.userID
-                    self.homeserver = response.homeServer
+//                    self.homeserver = response.homeServer
                     self.accessToken = response.accessToken
+                    self.fullSync()
                 }
             case .failure(let errorResponse):
                 print(errorResponse)
             }
-        }.resume()
+        }
+        .resume()
+    }
+    
+    public func logout() {
+        let components = urlComponents(path: "/_matrix/client/r0/logout",
+                                       queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "POST"
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard
+                error == nil,
+                let httpResponse = response as? HTTPURLResponse,
+                httpResponse.statusCode == 200
+            else { return }
+            
+            DispatchQueue.main.async {
+                self.accessToken = nil
+                self.status = .signedOut
+            }
+        }
+        .resume()
     }
     
     public func createRoom(name: String) {
@@ -97,7 +118,8 @@ public class Client: ObservableObject {
             case .failure(let errorResponse):
                 print(errorResponse)
             }
-        }.resume()
+        }
+        .resume()
     }
     
     public func sendMessage(body: String, roomID: String) {
@@ -119,7 +141,8 @@ public class Client: ObservableObject {
             case .failure(let errorResponse):
                 print(errorResponse)
             }
-        }.resume()
+        }
+        .resume()
     }
     
     public func fullSync() {
@@ -154,7 +177,8 @@ public class Client: ObservableObject {
             case .failure(let errorResponse):
                 print(errorResponse)
             }
-        }.resume()
+        }
+        .resume()
     }
     
     public func getLastEvent() {
@@ -174,7 +198,8 @@ public class Client: ObservableObject {
             case .failure(let errorResponse):
                 print(errorResponse)
             }
-        }.resume()
+        }
+        .resume()
     }
     
 }
