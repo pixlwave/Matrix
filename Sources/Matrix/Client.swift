@@ -145,6 +145,26 @@ public class Client: ObservableObject {
         .resume()
     }
     
+    public func getName(of room: Room) {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/state/m.room.name/",
+                                       queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "GET"
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard error == nil, let data = data else { return }
+            let result = data.decode(RoomNameResponse.self)
+            
+            switch result {
+            case .success(let response):
+                room.name = response.name
+            case .failure(let errorResponse):
+                print(errorResponse)
+            }
+        }
+        .resume()
+    }
+    
     public func fullSync() {
         status = .syncing
         
@@ -175,6 +195,8 @@ public class Client: ObservableObject {
                     self.rooms = rooms
                     self.nextBatch = response.nextBatch
                     self.longPoll()
+                    
+                    rooms.forEach { self.getName(of: $0) }
                 }
             case .failure(let errorResponse):
                 print(errorResponse)
@@ -213,6 +235,7 @@ public class Client: ObservableObject {
                             self.rooms[index].events.append(contentsOf: room.events)
                         } else {
                             self.rooms.append(room)
+                            self.getName(of: room)
                         }
                     }
                     

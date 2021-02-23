@@ -174,3 +174,8 @@ struct JoinedRooms: Codable {
         }
     }
 }
+
+
+struct RoomNameResponse: Codable {
+    let name: String
+}
