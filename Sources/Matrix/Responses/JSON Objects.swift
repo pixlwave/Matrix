@@ -136,7 +136,7 @@ struct JoinedRooms: Codable {
     struct Timeline: Codable {
         let events: [RoomEvent]
         let isLimited: Bool
-        let previousBatch: String
+        let previousBatch: String?
         
         enum CodingKeys: String, CodingKey {
             case events

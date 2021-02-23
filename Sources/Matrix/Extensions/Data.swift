@@ -10,6 +10,7 @@ extension Data {
                 return .failure(errorResponse)
             } else {
                 print(String(data: self, encoding: .utf8) ?? "Could not decode response")
+                print(error)
                 return .failure(ErrorResponse(code: "Decode Error", message: error.localizedDescription))
             }
         }
