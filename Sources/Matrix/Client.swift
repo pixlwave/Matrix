@@ -12,7 +12,9 @@ public class Client: ObservableObject {
     
     @Published public private(set) var status: Status = .signedOut
     
-    @Published public private(set) var userID = ""
+    @Published public private(set) var userID = UserDefaults.standard.string(forKey: "userID") {
+        didSet { UserDefaults.standard.set(userID, forKey: "userID")}
+    }
     
     @Published public private(set) var rooms: [Room] = []
     
@@ -157,7 +159,9 @@ public class Client: ObservableObject {
             
             switch result {
             case .success(let response):
-                room.name = response.name
+                DispatchQueue.main.async {
+                    room.name = response.name
+                }
             case .failure(let errorResponse):
                 print(errorResponse)
             }
@@ -186,7 +190,7 @@ public class Client: ObservableObject {
                     let eventObjects = joinedRooms[key]!.timeline.events
                     let events: [Event] = eventObjects.compactMap { event in
                         guard let body = event.content["body"] else { return nil }
-                        return Event(id: event.eventID, body: body, sender: event.sender)
+                        return Event(id: event.eventID, body: body, sender: event.sender, isMe: event.sender == self.userID)
                     }
                     return Room(id: key, events: events)
                 }
@@ -224,7 +228,7 @@ public class Client: ObservableObject {
                     let eventObjects = joinedRooms[key]!.timeline.events
                     let events: [Event] = eventObjects.compactMap { event in
                         guard let body = event.content["body"] else { return nil }
-                        return Event(id: event.eventID, body: body, sender: event.sender)
+                        return Event(id: event.eventID, body: body, sender: event.sender, isMe: event.sender == self.userID)
                     }
                     return Room(id: key, events: events)
                 }
