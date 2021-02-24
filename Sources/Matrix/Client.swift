@@ -189,7 +189,7 @@ public class Client: ObservableObject {
                 let rooms: [Room] = joinedRooms.keys.map { key in
                     let eventObjects = joinedRooms[key]!.timeline.events
                     let events: [Event] = eventObjects.compactMap { event in
-                        guard let body = event.content["body"] else { return nil }
+                        guard let body = event.content.body else { return nil }
                         return Event(id: event.eventID, body: body, sender: event.sender, isMe: event.sender == self.userID)
                     }
                     return Room(id: key, events: events)
@@ -227,7 +227,7 @@ public class Client: ObservableObject {
                 let rooms: [Room] = joinedRooms.keys.map { key in
                     let eventObjects = joinedRooms[key]!.timeline.events
                     let events: [Event] = eventObjects.compactMap { event in
-                        guard let body = event.content["body"] else { return nil }
+                        guard let body = event.content.body else { return nil }
                         return Event(id: event.eventID, body: body, sender: event.sender, isMe: event.sender == self.userID)
                     }
                     return Room(id: key, events: events)

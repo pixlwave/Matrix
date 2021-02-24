@@ -145,7 +145,7 @@ struct JoinedRooms: Codable {
         }
         
         struct RoomEvent: Codable {
-            let content: [String: String]
+            let content: RoomEventContent
             let type: String
             let eventID: String
             let sender: String
@@ -160,16 +160,8 @@ struct JoinedRooms: Codable {
                 case timestamp = "origin_server_ts"
             }
             
-            init(from decoder: Decoder) throws {
-                let container = try decoder.container(keyedBy: CodingKeys.self)
-                self.type = try container.decode(String.self, forKey: .type)
-                self.eventID = try container.decode(String.self, forKey: .eventID)
-                self.sender = try container.decode(String.self, forKey: .sender)
-                self.timestamp = try container.decode(Int.self, forKey: .timestamp)
-                
-                // content values aren't always strings, ignore these for now
-                let content = try? container.decode([String: String].self, forKey: .content)
-                self.content = content ?? [:]
+            struct RoomEventContent: Codable {
+                let body: String?
             }
         }
     }
