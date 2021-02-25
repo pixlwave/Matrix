@@ -164,6 +164,7 @@ public class Client: ObservableObject {
                 }
             case .failure(let errorResponse):
                 print(errorResponse)
+                room.name = room.members.map { $0.displayName ?? $0.userID }.joined(separator: ", ")
             }
         }
         .resume()
@@ -192,7 +193,10 @@ public class Client: ObservableObject {
                         guard let body = event.content.body else { return nil }
                         return Event(id: event.eventID, body: body, sender: event.sender, isMe: event.sender == self.userID)
                     }
-                    return Room(id: key, events: events)
+                    let stateEventObjects = joinedRooms[key]!.state.events
+                    let members = stateEventObjects.filter { $0.type == "m.room.member" && $0.content.membership == .join }
+                                                   .map { Member(event: $0) }
+                    return Room(id: key, events: events, members: members)
                 }
                 
                 DispatchQueue.main.async {
@@ -230,7 +234,10 @@ public class Client: ObservableObject {
                         guard let body = event.content.body else { return nil }
                         return Event(id: event.eventID, body: body, sender: event.sender, isMe: event.sender == self.userID)
                     }
-                    return Room(id: key, events: events)
+                    let stateEventObjects = joinedRooms[key]!.state.events
+                    let members = stateEventObjects.filter { $0.type == "m.room.member" && $0.content.membership == .join }
+                                                   .map { Member(event: $0) }
+                    return Room(id: key, events: events, members: members)
                 }
                 
                 DispatchQueue.main.async {

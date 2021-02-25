@@ -5,9 +5,12 @@ public class Room: ObservableObject, Identifiable {
     @Published public var name: String?
     @Published public var events: [Event]
     
-    init(id: String, name: String? = nil, events: [Event]) {
+    @Published public var members: [Member]
+    
+    init(id: String, name: String? = nil, events: [Event], members: [Member]) {
         self.id = id
         self.name = name
         self.events = events
+        self.members = members
     }
 }
