@@ -188,15 +188,7 @@ public class Client: ObservableObject {
             case .success(let response):
                 let joinedRooms = response.rooms.joined
                 let rooms: [Room] = joinedRooms.keys.map { key in
-                    let eventObjects = joinedRooms[key]!.timeline.events
-                    let events: [Event] = eventObjects.compactMap { event in
-                        guard let body = event.content.body else { return nil }
-                        return Event(id: event.eventID, body: body, sender: event.sender, isMe: event.sender == self.userID)
-                    }
-                    let stateEventObjects = joinedRooms[key]!.state.events
-                    let members = stateEventObjects.filter { $0.type == "m.room.member" && $0.content.membership == .join }
-                                                   .map { Member(event: $0) }
-                    return Room(id: key, events: events, members: members)
+                    Room(id: key, joinedRoom: joinedRooms[key]!, currentUserID: self.userID ?? "")
                 }
                 
                 DispatchQueue.main.async {
@@ -229,15 +221,7 @@ public class Client: ObservableObject {
             case .success(let response):
                 let joinedRooms = response.rooms.joined
                 let rooms: [Room] = joinedRooms.keys.map { key in
-                    let eventObjects = joinedRooms[key]!.timeline.events
-                    let events: [Event] = eventObjects.compactMap { event in
-                        guard let body = event.content.body else { return nil }
-                        return Event(id: event.eventID, body: body, sender: event.sender, isMe: event.sender == self.userID)
-                    }
-                    let stateEventObjects = joinedRooms[key]!.state.events
-                    let members = stateEventObjects.filter { $0.type == "m.room.member" && $0.content.membership == .join }
-                                                   .map { Member(event: $0) }
-                    return Room(id: key, events: events, members: members)
+                    Room(id: key, joinedRoom: joinedRooms[key]!, currentUserID: self.userID ?? "")
                 }
                 
                 DispatchQueue.main.async {
