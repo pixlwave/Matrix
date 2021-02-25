@@ -135,7 +135,30 @@ public class Client: ObservableObject {
         URLSession.shared.dataTask(with: request) { data, response, error in
             guard error == nil else { print(error!.localizedDescription); return }
             guard let data = data else { print(response.debugDescription); return }
-            let result = data.decode(SendMessageResponse.self)
+            let result = data.decode(SendResponse.self)
+            
+            switch result {
+            case .success(let response):
+                print(response)
+            case .failure(let errorResponse):
+                print(errorResponse)
+            }
+        }
+        .resume()
+    }
+    
+    public func sendReaction(text: String, to eventID: String, in roomID: String) {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction",
+                                       queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
+        var request = URLRequest(url: components.url!)
+        request.httpMethod = "POST"
+        let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: eventID, key: text))
+        request.httpBody = try? JSONEncoder().encode(bodyObject)
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard error == nil else { print(error!.localizedDescription); return }
+            guard let data = data else { print(response.debugDescription); return }
+            let result = data.decode(SendResponse.self)
             
             switch result {
             case .success(let response):
@@ -183,6 +206,9 @@ public class Client: ObservableObject {
             defer { DispatchQueue.main.async { self.status = .idle } }
             guard error == nil, let data = data else { return }
             let result = data.decode(SyncResponse.self)
+            
+            try! data.write(to: FileManager.default.temporaryDirectory.appendingPathComponent("matrix.json"))
+            print(FileManager.default.temporaryDirectory)
             
             switch result {
             case .success(let response):
