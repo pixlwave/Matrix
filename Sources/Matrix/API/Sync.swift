@@ -1,93 +1,5 @@
 import Foundation
 
-struct RegisterUserBody: Codable {
-    let username: String
-    let password: String
-    let auth: [String: String]
-}
-
-
-struct RegisterUserResponse: Codable {
-    let accessToken: String
-    let homeServer: String
-    let userID: String
-    
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-        case homeServer = "home_server"
-        case userID = "user_id"
-    }
-}
-
-
-struct LoginUserBody: Codable {
-    let type: String
-    let username: String
-    let password: String
-    
-    enum CodingKeys: String, CodingKey {
-        case type
-        case username = "user"
-        case password
-    }
-}
-
-
-struct LoginUserResponse: Codable {
-    let userID: String
-    let accessToken: String
-    let homeServer: String
-    let deviceID: String
-    
-    enum CodingKeys: String, CodingKey {
-        case userID = "user_id"
-        case accessToken = "access_token"
-        case homeServer = "home_server"
-        case deviceID = "device_id"
-    }
-}
-
-
-struct CreateRoomBody: Codable {
-    let name: String
-    let roomAliasName: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case name
-        case roomAliasName = "room_alias_name"
-    }
-}
-
-
-struct CreateRoomResponse: Codable {
-    let roomID: String
-    
-    enum CodingKeys: String, CodingKey {
-        case roomID = "room_id"
-    }
-}
-
-
-struct SendMessageBody: Codable {
-    let type: String
-    let body: String
-    
-    enum CodingKeys: String, CodingKey {
-        case type = "msgtype"
-        case body
-    }
-}
-
-
-struct SendMessageResponse: Codable {
-    let eventID: String
-    
-    enum CodingKeys: String, CodingKey {
-        case eventID = "event_id"
-    }
-}
-
-
 struct SyncResponse: Codable {
     let nextBatch: String
     let rooms: Rooms
@@ -112,6 +24,7 @@ struct SyncResponse: Codable {
         }
     }
 }
+
 
 struct JoinedRooms: Codable {
     let summary: RoomSummary?
@@ -206,9 +119,4 @@ struct JoinedRooms: Codable {
             }
         }
     }
-}
-
-
-struct RoomNameResponse: Codable {
-    let name: String
 }
