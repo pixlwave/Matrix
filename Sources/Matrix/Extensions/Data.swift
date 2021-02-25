@@ -9,7 +9,8 @@ extension Data {
             if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: self){
                 return .failure(errorResponse)
             } else {
-                print(String(data: self, encoding: .utf8) ?? "Could not decode response")
+                // write data to file as this can be huge!
+                // print(String(data: self, encoding: .utf8) ?? "Could not decode response")
                 print(error)
                 return .failure(ErrorResponse(code: "Decode Error", message: error.localizedDescription))
             }

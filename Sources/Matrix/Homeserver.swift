@@ -19,8 +19,8 @@ public struct Homeserver: Codable {
         else { return nil }
         
         if components.scheme == nil { components.scheme = "https" }
-        if components.host == nil { components.host = "matrix.org" }
-        if components.port == nil { components.port = components.scheme == "https" ? 8448 : 8008 }
+        if components.host == nil { components.host = "matrix-federation.matrix.org" }
+        if components.port == nil { components.port = components.scheme == "https" ? 443 : 8008 }
         
         self.components = components
     }
@@ -36,6 +36,6 @@ public struct Homeserver: Codable {
     }
     
     static var `default`: Homeserver{
-        Homeserver(scheme: "https", host: "matrix.org", port: 8448)
+        Homeserver(scheme: "https", host: "matrix-federation.matrix.org", port: 443)
     }
 }
