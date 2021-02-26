@@ -187,7 +187,7 @@ public class Client: ObservableObject {
                 }
             case .failure(let errorResponse):
                 print(errorResponse)
-                room.name = room.members.map { $0.displayName ?? $0.userID }.joined(separator: ", ")
+                room.name = room.members.filter { $0.userID != self.userID }.map { $0.displayName ?? $0.userID }.joined(separator: ", ")
             }
         }
         .resume()
