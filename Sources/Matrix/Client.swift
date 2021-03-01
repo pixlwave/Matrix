@@ -22,7 +22,7 @@ public class Client: ObservableObject {
     
     public init() {
         homeserver = Homeserver.saved ?? .default
-        if accessToken != nil { fullSync() }
+        if accessToken != nil { initialSync() }
     }
     
     private func urlComponents(path: String, queryItems: [URLQueryItem]? = nil) -> URLComponents {
@@ -89,7 +89,7 @@ public class Client: ObservableObject {
                 self.userID = response.userID
 //                self.homeserver = response.homeServer
                 self.accessToken = response.accessToken
-                self.fullSync()
+                self.initialSync()
             }
         }
         .resume()
@@ -177,12 +177,16 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func fullSync() {
+    private let initialSyncFilter = """
+    {"room":{"state":{"lazy_load_members":true},"timeline":{"limit":1}}}
+    """
+    
+    public func initialSync() {
         status = .syncing
         
         var components = urlComponents(path: "/_matrix/client/r0/sync")
         components.queryItems = [
-            URLQueryItem(name: "full_state", value: "true"),
+            URLQueryItem(name: "filter", value: initialSyncFilter),
             URLQueryItem(name: "access_token", value: accessToken)
         ]
         
@@ -198,7 +202,10 @@ public class Client: ObservableObject {
                 self.nextBatch = response.nextBatch
                 self.longPoll()
                 
-                rooms.forEach { self.getName(of: $0) }
+                rooms.forEach {
+                    self.getName(of: $0)
+                    self.loadMoreMessages(in: $0)
+                }
             }
         } onFailure: { errorResponse in
             print(errorResponse)
@@ -261,18 +268,4 @@ public class Client: ObservableObject {
         }
         .resume()
     }
-    
-    public func getLastEvent() {
-        var components = urlComponents(path: "/_matrix/client/r0/sync")
-        components.queryItems = [
-            URLQueryItem(name: "filter", value: "{\"room\":{\"timeline\":{\"limit\":1}}}"),
-            URLQueryItem(name: "access_token", value: accessToken)
-        ]
-        
-        apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
-            print(response)
-        }
-        .resume()
-    }
-    
 }
