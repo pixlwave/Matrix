@@ -8,7 +8,7 @@ public class Client: ObservableObject {
     
     @KeychainItem(account: "uk.pixlwave.Matrix") var accessToken: String?
     
-    public enum Status { case signedOut, syncing, idle }
+    public enum Status { case signedOut, syncing, idle, syncError }
     
     @Published public private(set) var status: Status = .signedOut
     
@@ -32,6 +32,23 @@ public class Client: ObservableObject {
         return components
     }
     
+    private func apiTask<T>(with request: URLRequest,
+                            as type: T.Type,
+                            onSuccess: @escaping (T) -> (),
+                            onFailure: @escaping (ErrorResponse) -> () = { print($0) }) -> URLSessionDataTask where T: Decodable {
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard error == nil, let data = data else { return }
+            let result = data.decode(T.self)
+            
+            switch result {
+            case .success(let response):
+                onSuccess(response)
+            case .failure(let errorResponse):
+                onFailure(errorResponse)
+            }
+        }
+    }
+    
     public func register(username: String, password: String) {
         let components = urlComponents(path: "/_matrix/client/r0/register")
         var request = URLRequest(url: components.url!)
@@ -39,17 +56,11 @@ public class Client: ObservableObject {
         let bodyObject = RegisterUserBody(username: username, password: password, auth: ["type": "m.login.dummy"])
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard error == nil, let data = data else { return }
-            let result = data.decode(RegisterUserResponse.self)
-            
-            switch result {
-            case .success(let response):
+        apiTask(with: request, as: RegisterUserResponse.self) { response in
+            DispatchQueue.main.async {
                 self.userID = response.userID
 //                self.homeserver = response.homeServer
                 self.accessToken = response.accessToken
-            case .failure(let errorResponse):
-                print(errorResponse)
             }
         }
         .resume()
@@ -62,20 +73,12 @@ public class Client: ObservableObject {
         let bodyObject = LoginUserBody(type: "m.login.password", username: username, password: password)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard error == nil, let data = data else { return }
-            let result = data.decode(LoginUserResponse.self)
-            
-            switch result {
-            case .success(let response):
-                DispatchQueue.main.async {
-                    self.userID = response.userID
-//                    self.homeserver = response.homeServer
-                    self.accessToken = response.accessToken
-                    self.fullSync()
-                }
-            case .failure(let errorResponse):
-                print(errorResponse)
+        apiTask(with: request, as: LoginUserResponse.self) { response in
+            DispatchQueue.main.async {
+                self.userID = response.userID
+//                self.homeserver = response.homeServer
+                self.accessToken = response.accessToken
+                self.fullSync()
             }
         }
         .resume()
@@ -110,16 +113,8 @@ public class Client: ObservableObject {
         let bodyObject = CreateRoomBody(name: name, roomAliasName: nil)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard error == nil, let data = data else { return }
-            let result = data.decode(CreateRoomResponse.self)
-            
-            switch result {
-            case .success(let response):
-                print(response)
-            case .failure(let errorResponse):
-                print(errorResponse)
-            }
+        apiTask(with: request, as: CreateRoomResponse.self) { response in
+            print(response)
         }
         .resume()
     }
@@ -132,17 +127,8 @@ public class Client: ObservableObject {
         let bodyObject = SendMessageBody(type: "m.text", body: body)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard error == nil else { print(error!.localizedDescription); return }
-            guard let data = data else { print(response.debugDescription); return }
-            let result = data.decode(SendResponse.self)
-            
-            switch result {
-            case .success(let response):
-                print(response)
-            case .failure(let errorResponse):
-                print(errorResponse)
-            }
+        apiTask(with: request, as: SendResponse.self) { response in
+            print(response)
         }
         .resume()
     }
@@ -155,17 +141,8 @@ public class Client: ObservableObject {
         let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: eventID, key: text))
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard error == nil else { print(error!.localizedDescription); return }
-            guard let data = data else { print(response.debugDescription); return }
-            let result = data.decode(SendResponse.self)
-            
-            switch result {
-            case .success(let response):
-                print(response)
-            case .failure(let errorResponse):
-                print(errorResponse)
-            }
+        apiTask(with: request, as: SendResponse.self) { response in
+            print(response)
         }
         .resume()
     }
@@ -176,17 +153,13 @@ public class Client: ObservableObject {
         var request = URLRequest(url: components.url!)
         request.httpMethod = "GET"
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard error == nil, let data = data else { return }
-            let result = data.decode(RoomNameResponse.self)
-            
-            switch result {
-            case .success(let response):
-                DispatchQueue.main.async {
-                    room.name = response.name
-                }
-            case .failure(let errorResponse):
-                print(errorResponse)
+        apiTask(with: request, as: RoomNameResponse.self) { response in
+            DispatchQueue.main.async {
+                room.name = response.name
+            }
+        } onFailure: { errorResponse in
+            print(errorResponse)
+            DispatchQueue.main.async {
                 room.name = room.members.filter { $0.userID != self.userID }.map { $0.displayName ?? $0.userID }.joined(separator: ", ")
             }
         }
@@ -201,31 +174,25 @@ public class Client: ObservableObject {
             URLQueryItem(name: "full_state", value: "true"),
             URLQueryItem(name: "access_token", value: accessToken)
         ]
-                
-        URLSession.shared.dataTask(with: components.url!) { data, response, error in
-            defer { DispatchQueue.main.async { self.status = .idle } }
-            guard error == nil, let data = data else { return }
-            let result = data.decode(SyncResponse.self)
+        
+        apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
+            let joinedRooms = response.rooms.joined
+            let rooms: [Room] = joinedRooms.keys.map { key in
+                Room(id: key, joinedRoom: joinedRooms[key]!, currentUserID: self.userID ?? "")
+            }
             
-            try! data.write(to: FileManager.default.temporaryDirectory.appendingPathComponent("matrix.json"))
-            print(FileManager.default.temporaryDirectory)
-            
-            switch result {
-            case .success(let response):
-                let joinedRooms = response.rooms.joined
-                let rooms: [Room] = joinedRooms.keys.map { key in
-                    Room(id: key, joinedRoom: joinedRooms[key]!, currentUserID: self.userID ?? "")
-                }
+            DispatchQueue.main.async {
+                self.rooms = rooms
+                self.status = .idle
+                self.nextBatch = response.nextBatch
+                self.longPoll()
                 
-                DispatchQueue.main.async {
-                    self.rooms = rooms
-                    self.nextBatch = response.nextBatch
-                    self.longPoll()
-                    
-                    rooms.forEach { self.getName(of: $0) }
-                }
-            case .failure(let errorResponse):
-                print(errorResponse)
+                rooms.forEach { self.getName(of: $0) }
+            }
+        } onFailure: { errorResponse in
+            print(errorResponse)
+            DispatchQueue.main.async {
+                self.status = .syncError
             }
         }
         .resume()
@@ -238,33 +205,25 @@ public class Client: ObservableObject {
             URLQueryItem(name: "timeout", value: "5000"),
             URLQueryItem(name: "access_token", value: accessToken)
         ]
-                
-        URLSession.shared.dataTask(with: components.url!) { data, response, error in
-            guard error == nil, let data = data else { return }
-            let result = data.decode(SyncResponse.self)
+        
+        apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
+            let joinedRooms = response.rooms.joined
+            let rooms: [Room] = joinedRooms.keys.map { key in
+                Room(id: key, joinedRoom: joinedRooms[key]!, currentUserID: self.userID ?? "")
+            }
             
-            switch result {
-            case .success(let response):
-                let joinedRooms = response.rooms.joined
-                let rooms: [Room] = joinedRooms.keys.map { key in
-                    Room(id: key, joinedRoom: joinedRooms[key]!, currentUserID: self.userID ?? "")
+            DispatchQueue.main.async {
+                rooms.forEach { room in
+                    if let index = self.rooms.firstIndex(where: { room.id == $0.id }) {
+                        self.rooms[index].events.append(contentsOf: room.events)
+                    } else {
+                        self.rooms.append(room)
+                        self.getName(of: room)
+                    }
                 }
                 
-                DispatchQueue.main.async {
-                    rooms.forEach { room in
-                        if let index = self.rooms.firstIndex(where: { room.id == $0.id }) {
-                            self.rooms[index].events.append(contentsOf: room.events)
-                        } else {
-                            self.rooms.append(room)
-                            self.getName(of: room)
-                        }
-                    }
-                    
-                    self.nextBatch = response.nextBatch
-                    self.longPoll()
-                }
-            case .failure(let errorResponse):
-                print(errorResponse)
+                self.nextBatch = response.nextBatch
+                self.longPoll()
             }
         }
         .resume()
@@ -276,17 +235,9 @@ public class Client: ObservableObject {
             URLQueryItem(name: "filter", value: "{\"room\":{\"timeline\":{\"limit\":1}}}"),
             URLQueryItem(name: "access_token", value: accessToken)
         ]
-                
-        URLSession.shared.dataTask(with: components.url!) { data, response, error in
-            guard error == nil, let data = data else { return }
-            let result = data.decode(SyncResponse.self)
-            
-            switch result {
-            case .success(let response):
-                print(response)
-            case .failure(let errorResponse):
-                print(errorResponse)
-            }
+        
+        apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
+            print(response)
         }
         .resume()
     }
