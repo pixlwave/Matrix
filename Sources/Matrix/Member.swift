@@ -11,7 +11,7 @@ public struct Member {
         self.avatarURL = avatarURL
     }
     
-    init(event: JoinedRooms.State.StateEvent) {
+    init(event: StateEvent) {
         self.userID = event.stateKey
         self.displayName = event.content.displayName
         

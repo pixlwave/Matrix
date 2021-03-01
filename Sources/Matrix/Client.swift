@@ -240,6 +240,28 @@ public class Client: ObservableObject {
         .resume()
     }
     
+    public func loadMoreMessages(in room: Room) {
+        var components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/messages")
+        components.queryItems = [
+            URLQueryItem(name: "from", value: room.previousBatch),
+            URLQueryItem(name: "dir", value: "b"),
+            URLQueryItem(name: "access_token", value: accessToken)
+        ]
+        
+        apiTask(with: URLRequest(url: components.url!), as: MessagesResponse.self) { response in
+            let messages = response.events?.compactMap { Event(roomEvent: $0, currentUserID: self.userID ?? "") }
+            
+            DispatchQueue.main.async {
+                if let messages = messages {
+                    room.events.insert(contentsOf: messages.reversed(), at: 0)
+                }
+                
+                room.previousBatch = response.endToken
+            }
+        }
+        .resume()
+    }
+    
     public func getLastEvent() {
         var components = urlComponents(path: "/_matrix/client/r0/sync")
         components.queryItems = [

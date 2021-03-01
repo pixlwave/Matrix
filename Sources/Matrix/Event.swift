@@ -13,7 +13,7 @@ public struct Event: Identifiable, Equatable {
         self.isMe = isMe
     }
     
-    init?(roomEvent: JoinedRooms.Timeline.RoomEvent, currentUserID: String) {
+    init?(roomEvent: RoomEvent, currentUserID: String) {
         guard let body = roomEvent.content.body else { return nil }
         
         self.id = roomEvent.eventID

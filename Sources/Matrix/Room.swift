@@ -4,8 +4,11 @@ public class Room: ObservableObject, Identifiable {
     public let id: String
     @Published public var name: String?
     @Published public var events: [Event]
+    @Published var previousBatch: String?
     
     @Published public var members: [Member]
+    
+    public var hasMoreMessages: Bool { previousBatch != nil }
     
     init(id: String, name: String? = nil, events: [Event], members: [Member]) {
         self.id = id
@@ -22,5 +25,6 @@ public class Room: ObservableObject, Identifiable {
         self.id = id
         self.events = events
         self.members = members
+        self.previousBatch = joinedRoom.timeline.previousBatch
     }
 }
