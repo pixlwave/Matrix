@@ -35,16 +35,27 @@ public class Client: ObservableObject {
     private func apiTask<T>(with request: URLRequest,
                             as type: T.Type,
                             onSuccess: @escaping (T) -> (),
-                            onFailure: @escaping (ErrorResponse) -> () = { print($0) }) -> URLSessionDataTask where T: Decodable {
+                            onFailure: ((ErrorResponse) -> ())? = nil) -> URLSessionDataTask where T: Decodable {
         URLSession.shared.dataTask(with: request) { data, response, error in
-            guard error == nil, let data = data else { return }
+            if let error = error {
+                print(error)
+                onFailure?(ErrorResponse(code: "URLSession Error", message: error.localizedDescription))
+                return
+            }
+            
+            guard let data = data else {
+                print("Missing Response Data")
+                onFailure?(ErrorResponse(code: "Missing Response Data", message: "Empty response"))
+                return
+            }
             let result = data.decode(T.self)
             
             switch result {
             case .success(let response):
                 onSuccess(response)
             case .failure(let errorResponse):
-                onFailure(errorResponse)
+                print(errorResponse)
+                onFailure?(errorResponse)
             }
         }
     }
