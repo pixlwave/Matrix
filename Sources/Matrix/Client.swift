@@ -130,8 +130,8 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func sendMessage(body: String, roomID: String) {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message",
+    public func sendMessage(body: String, room: Room) {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/send/m.room.message",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
@@ -144,12 +144,12 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func sendReaction(text: String, to eventID: String, in roomID: String) {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction",
+    public func sendReaction(text: String, to event: Event, in room: Room) {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/send/m.reaction",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
-        let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: eventID, key: text))
+        let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: event.id, key: text))
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
         apiTask(with: request, as: SendResponse.self) { response in
