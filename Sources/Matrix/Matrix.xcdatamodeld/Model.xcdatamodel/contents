@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="17709" systemVersion="20D80" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="MessageObj" representedClassName="MessageObj" syncable="YES" codeGenerationType="class">
+        <attribute name="body" attributeType="String"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="sender" attributeType="String"/>
+        <relationship name="room" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RoomObj" inverseName="messages" inverseEntity="RoomObj"/>
+    </entity>
+    <entity name="RoomObj" representedClassName="RoomObj" syncable="YES" codeGenerationType="class">
+        <attribute name="id" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="previousBatch" optional="YES" attributeType="String"/>
+        <relationship name="messages" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MessageObj" inverseName="room" inverseEntity="MessageObj"/>
+    </entity>
+    <elements>
+        <element name="RoomObj" positionX="-63" positionY="-18" width="128" height="89"/>
+        <element name="MessageObj" positionX="-45" positionY="27" width="128" height="104"/>
+    </elements>
+</model>
