@@ -5,7 +5,7 @@ struct RoomEvent: Codable {
     let type: String
     let eventID: String
     let sender: String
-    let timestamp: Int
+    let timestamp: TimeInterval
 //    let unsigned: UnsignedData
     
     enum CodingKeys: String, CodingKey {
