@@ -1,4 +1,4 @@
-import Foundation
+import CoreData
 
 public class Client: ObservableObject {
     
@@ -16,9 +16,12 @@ public class Client: ObservableObject {
         didSet { UserDefaults.standard.set(userID, forKey: "userID")}
     }
     
-    @Published public private(set) var rooms: [Room] = []
+    @Published public private(set) var rooms: [RoomObj] = []
     
     private var nextBatch: String?
+    
+    #warning("placeholder")
+    private var context: NSManagedObjectContext!
     
     public init() {
         homeserver = Homeserver.saved ?? .default
@@ -130,7 +133,7 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func sendMessage(body: String, room: Room) {
+    public func sendMessage(body: String, room: RoomObj) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/send/m.room.message",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -144,7 +147,7 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func sendReaction(text: String, to event: Event, in room: Room) {
+    public func sendReaction(text: String, to event: MessageObj, in room: RoomObj) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/send/m.reaction",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -158,7 +161,7 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    private func getName(of room: Room) {
+    private func getName(of room: RoomObj) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/state/m.room.name/",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
@@ -169,21 +172,21 @@ public class Client: ObservableObject {
         } onFailure: { errorResponse in
             print(errorResponse)
             DispatchQueue.main.async {
-                room.name = room.members.filter { $0.userID != self.userID }.map { $0.displayName ?? $0.userID }.joined(separator: ", ")
+//                room.name = room.members.filter { $0.userID != self.userID }.map { $0.displayName ?? $0.userID }.joined(separator: ", ")
             }
         }
         .resume()
     }
     
-    private func getMembers(in room: Room) {
+    private func getMembers(in room: RoomObj) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/members",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
         apiTask(with: URLRequest(url: components.url!), as: Members.self) { response in
             let members = response.members.filter { $0.type == "m.room.member" && $0.content.membership == .join }
-                                          .map { Member(event: $0) }
+                                          .map { MemberObj(event: $0, context: self.context) }
             DispatchQueue.main.async {
-                room.members = members
+                room.members = NSSet(array: members)
             }
         }
         .resume()
@@ -204,8 +207,8 @@ public class Client: ObservableObject {
         
         apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
             let joinedRooms = response.rooms.joined
-            let rooms: [Room] = joinedRooms.keys.map { key in
-                Room(id: key, joinedRoom: joinedRooms[key]!, currentUserID: self.userID ?? "")
+            let rooms: [RoomObj] = joinedRooms.keys.map { key in
+                RoomObj(id: key, joinedRoom: joinedRooms[key]!, context: self.context)
             }
             
             DispatchQueue.main.async {
@@ -239,14 +242,14 @@ public class Client: ObservableObject {
         
         apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
             let joinedRooms = response.rooms.joined
-            let rooms: [Room] = joinedRooms.keys.map { key in
-                Room(id: key, joinedRoom: joinedRooms[key]!, currentUserID: self.userID ?? "")
+            let rooms: [RoomObj] = joinedRooms.keys.map { key in
+                RoomObj(id: key, joinedRoom: joinedRooms[key]!, context: self.context)
             }
             
             DispatchQueue.main.async {
                 rooms.forEach { room in
                     if let index = self.rooms.firstIndex(where: { room.id == $0.id }) {
-                        self.rooms[index].events.append(contentsOf: room.events)
+//                        self.rooms[index].events.append(contentsOf: room.events)
                     } else {
                         self.rooms.append(room)
                         self.getName(of: room)
@@ -260,7 +263,7 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func loadMoreMessages(in room: Room) {
+    public func loadMoreMessages(in room: RoomObj) {
         var components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/messages")
         components.queryItems = [
             URLQueryItem(name: "from", value: room.previousBatch),
@@ -269,11 +272,12 @@ public class Client: ObservableObject {
         ]
         
         apiTask(with: URLRequest(url: components.url!), as: MessagesResponse.self) { response in
-            let messages = response.events?.compactMap { $0.makeEvent() }
+            let messages = response.events?.filter { $0.type == "m.room.message" }
+                                           .compactMap { MessageObj(roomEvent: $0, context: self.context) }
             
             DispatchQueue.main.async {
                 if let messages = messages {
-                    room.events.insert(contentsOf: messages.reversed(), at: 0)
+                    room.addToMessages(NSSet(array: messages))
                 }
                 
                 room.previousBatch = response.endToken

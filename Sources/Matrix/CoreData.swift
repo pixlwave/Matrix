@@ -22,7 +22,29 @@ extension MessageObj {
         self.init(context: context)
         self.body = body
         self.id = roomEvent.eventID
-        self.sender = roomEvent.sender
+        self.sender = MemberObj(userID: roomEvent.sender, context: context)
         self.date = Date(timeIntervalSince1970: roomEvent.timestamp / 1000)
+    }
+}
+
+
+extension MemberObj {
+    convenience init(userID: String, context: NSManagedObjectContext) {
+        self.init(context: context)
+        self.id = userID
+    }
+    
+    convenience init(event: StateEvent, context: NSManagedObjectContext) {
+        self.init(context: context)
+        
+        self.id = event.stateKey
+        self.displayName = event.content.displayName
+        
+        if let urlString = event.content.avatarURL, var components = URLComponents(string: urlString) {
+            components.scheme = "https"
+            self.avatarURL = components.url
+        } else {
+            self.avatarURL = nil
+        }
     }
 }
