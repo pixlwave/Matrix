@@ -18,5 +18,17 @@ struct RoomEvent: Codable {
     
     struct RoomEventContent: Codable {
         let body: String?
+        let relationship: Relationship?
+        let newContent: NewContent?
+        
+        enum CodingKeys: String, CodingKey {
+            case body
+            case relationship = "m.relates_to"
+            case newContent = "m.new_content"
+        }
+        
+        struct NewContent: Codable {
+            let body: String?
+        }
     }
 }

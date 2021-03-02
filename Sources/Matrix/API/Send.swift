@@ -21,8 +21,8 @@ struct SendReactionBody: Codable {
 
 
 struct Relationship: Codable {
-    let type: RelationshipType
-    let eventID: String
+    let type: RelationshipType?
+    let eventID: String?
     let key: String?
     
     enum CodingKeys: String, CodingKey {
