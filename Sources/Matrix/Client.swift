@@ -16,7 +16,7 @@ public class Client: ObservableObject {
         didSet { UserDefaults.standard.set(userID, forKey: "userID")}
     }
     
-    @Published public private(set) var rooms: [RoomObj] = []
+    @Published public private(set) var rooms: [Room] = []
     
     private var nextBatch: String?
     
@@ -133,7 +133,7 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func sendMessage(body: String, room: RoomObj) {
+    public func sendMessage(body: String, room: Room) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/send/m.room.message",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -147,7 +147,7 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func sendReaction(text: String, to event: MessageObj, in room: RoomObj) {
+    public func sendReaction(text: String, to event: Message, in room: Room) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/send/m.reaction",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -161,7 +161,7 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    private func getName(of room: RoomObj) {
+    private func getName(of room: Room) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/state/m.room.name/",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
@@ -178,13 +178,13 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    private func getMembers(in room: RoomObj) {
+    private func getMembers(in room: Room) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/members",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
         apiTask(with: URLRequest(url: components.url!), as: Members.self) { response in
             let members = response.members.filter { $0.type == "m.room.member" && $0.content.membership == .join }
-                                          .map { MemberObj(event: $0, context: self.context) }
+                                          .map { Member(event: $0, context: self.context) }
             DispatchQueue.main.async {
                 room.members = NSSet(array: members)
             }
@@ -207,8 +207,8 @@ public class Client: ObservableObject {
         
         apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
             let joinedRooms = response.rooms.joined
-            let rooms: [RoomObj] = joinedRooms.keys.map { key in
-                RoomObj(id: key, joinedRoom: joinedRooms[key]!, context: self.context)
+            let rooms: [Room] = joinedRooms.keys.map { key in
+                Room(id: key, joinedRoom: joinedRooms[key]!, context: self.context)
             }
             
             DispatchQueue.main.async {
@@ -242,8 +242,8 @@ public class Client: ObservableObject {
         
         apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
             let joinedRooms = response.rooms.joined
-            let rooms: [RoomObj] = joinedRooms.keys.map { key in
-                RoomObj(id: key, joinedRoom: joinedRooms[key]!, context: self.context)
+            let rooms: [Room] = joinedRooms.keys.map { key in
+                Room(id: key, joinedRoom: joinedRooms[key]!, context: self.context)
             }
             
             DispatchQueue.main.async {
@@ -263,7 +263,7 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func loadMoreMessages(in room: RoomObj) {
+    public func loadMoreMessages(in room: Room) {
         var components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/messages")
         components.queryItems = [
             URLQueryItem(name: "from", value: room.previousBatch),
@@ -273,7 +273,7 @@ public class Client: ObservableObject {
         
         apiTask(with: URLRequest(url: components.url!), as: MessagesResponse.self) { response in
             let messages = response.events?.filter { $0.type == "m.room.message" }
-                                           .compactMap { MessageObj(roomEvent: $0, context: self.context) }
+                                           .compactMap { Message(roomEvent: $0, context: self.context) }
             
             DispatchQueue.main.async {
                 if let messages = messages {

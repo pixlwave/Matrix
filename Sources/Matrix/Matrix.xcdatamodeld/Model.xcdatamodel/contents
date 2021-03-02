@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="17709" systemVersion="20D80" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
-    <entity name="MemberObj" representedClassName="MemberObj" syncable="YES" codeGenerationType="class">
+    <entity name="Member" representedClassName="Member" syncable="YES" codeGenerationType="class">
         <attribute name="avatarURL" optional="YES" attributeType="URI"/>
         <attribute name="displayName" optional="YES" attributeType="String"/>
         <attribute name="id" attributeType="String"/>
-        <relationship name="rooms" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="RoomObj" inverseName="members" inverseEntity="RoomObj"/>
+        <relationship name="rooms" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Room" inverseName="members" inverseEntity="Room"/>
     </entity>
-    <entity name="MessageObj" representedClassName="MessageObj" syncable="YES" codeGenerationType="class">
+    <entity name="Message" representedClassName="Message" syncable="YES" codeGenerationType="class">
         <attribute name="body" attributeType="String"/>
         <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" attributeType="String"/>
-        <relationship name="room" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RoomObj" inverseName="messages" inverseEntity="RoomObj"/>
-        <relationship name="sender" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="MemberObj"/>
+        <relationship name="room" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Room" inverseName="messages" inverseEntity="Room"/>
+        <relationship name="sender" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Member"/>
     </entity>
-    <entity name="RoomObj" representedClassName="RoomObj" syncable="YES" codeGenerationType="class">
+    <entity name="Room" representedClassName="Room" syncable="YES" codeGenerationType="class">
         <attribute name="id" attributeType="String"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="previousBatch" optional="YES" attributeType="String"/>
-        <relationship name="members" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MemberObj" inverseName="rooms" inverseEntity="MemberObj"/>
-        <relationship name="messages" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="MessageObj" inverseName="room" inverseEntity="MessageObj"/>
+        <relationship name="members" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Member" inverseName="rooms" inverseEntity="Member"/>
+        <relationship name="messages" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Message" inverseName="room" inverseEntity="Message"/>
     </entity>
     <elements>
-        <element name="MessageObj" positionX="-45" positionY="27" width="128" height="104"/>
-        <element name="RoomObj" positionX="-63" positionY="-18" width="128" height="104"/>
-        <element name="MemberObj" positionX="-27" positionY="81" width="128" height="89"/>
+        <element name="Member" positionX="0" positionY="0" width="0" height="0"/>
+        <element name="Message" positionX="0" positionY="0" width="0" height="0"/>
+        <element name="Room" positionX="0" positionY="0" width="0" height="0"/>
     </elements>
 </model>
