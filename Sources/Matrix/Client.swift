@@ -158,13 +158,11 @@ public class Client: ObservableObject {
         .resume()
     }
     
-    public func getName(of room: Room) {
+    private func getName(of room: Room) {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/state/m.room.name/",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
-        var request = URLRequest(url: components.url!)
-        request.httpMethod = "GET"
         
-        apiTask(with: request, as: RoomNameResponse.self) { response in
+        apiTask(with: URLRequest(url: components.url!), as: RoomNameResponse.self) { response in
             DispatchQueue.main.async {
                 room.name = response.name
             }
@@ -172,6 +170,20 @@ public class Client: ObservableObject {
             print(errorResponse)
             DispatchQueue.main.async {
                 room.name = room.members.filter { $0.userID != self.userID }.map { $0.displayName ?? $0.userID }.joined(separator: ", ")
+            }
+        }
+        .resume()
+    }
+    
+    private func getMembers(in room: Room) {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/members",
+                                       queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
+        
+        apiTask(with: URLRequest(url: components.url!), as: Members.self) { response in
+            let members = response.members.filter { $0.type == "m.room.member" && $0.content.membership == .join }
+                                          .map { Member(event: $0) }
+            DispatchQueue.main.async {
+                room.members = members
             }
         }
         .resume()
@@ -204,6 +216,7 @@ public class Client: ObservableObject {
                 
                 rooms.forEach {
                     self.getName(of: $0)
+                    self.getMembers(in: $0)
                     self.loadMoreMessages(in: $0)
                 }
             }
