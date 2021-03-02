@@ -269,7 +269,7 @@ public class Client: ObservableObject {
         ]
         
         apiTask(with: URLRequest(url: components.url!), as: MessagesResponse.self) { response in
-            let messages = response.events?.compactMap { Event(roomEvent: $0, currentUserID: self.userID ?? "") }
+            let messages = response.events?.compactMap { $0.makeEvent() }
             
             DispatchQueue.main.async {
                 if let messages = messages {

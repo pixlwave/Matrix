@@ -31,4 +31,15 @@ struct RoomEvent: Codable {
             let body: String?
         }
     }
+    
+    func makeEvent() -> Event? {
+        switch type {
+        case "m.room.message":
+            return MessageEvent(roomEvent: self)
+        case "m.reaction":
+            return ReactionEvent(roomEvent: self)
+        default:
+            return nil
+        }
+    }
 }

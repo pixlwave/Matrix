@@ -18,7 +18,7 @@ public class Room: ObservableObject, Identifiable {
     }
     
     init(id: String, joinedRoom: JoinedRooms, currentUserID: String) {
-        let events = joinedRoom.timeline.events.compactMap { Event(roomEvent: $0, currentUserID: currentUserID) }
+        let events = joinedRoom.timeline.events.compactMap { $0.makeEvent() }
         let members = joinedRoom.state.events.filter { $0.type == "m.room.member" && $0.content.membership == .join }
                                              .map { Member(event: $0) }
         
@@ -26,5 +26,9 @@ public class Room: ObservableObject, Identifiable {
         self.events = events
         self.members = members
         self.previousBatch = joinedRoom.timeline.previousBatch
+    }
+    
+    public func lastMessage() -> MessageEvent? {
+        events.compactMap { $0 as? MessageEvent }.last
     }
 }
