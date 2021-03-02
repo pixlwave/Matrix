@@ -9,7 +9,7 @@ extension Room {
         
         self.init(context: context)
         self.id = id
-        self.messages = self.messages?.addingObjects(from: messages) as NSSet?
+        self.messages = NSSet(array: messages)
         self.previousBatch = joinedRoom.timeline.previousBatch
     }
 }
