@@ -20,12 +20,27 @@ public class Client: ObservableObject {
     
     private var nextBatch: String?
     
-    #warning("placeholder")
-    private var context: NSManagedObjectContext!
+    private var container: NSPersistentContainer
+    lazy private var backgroundContext: NSManagedObjectContext = container.newBackgroundContext()   // lazy creation on background thread
     
     public init() {
+        guard
+            let modelURL = Bundle.module.url(forResource: "Matrix", withExtension: "momd"),
+            let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL)
+        else { fatalError("Unable to find Core Data Model") }
+        
+        container = NSPersistentContainer(name: "Matrix", managedObjectModel: managedObjectModel)
+        container.loadPersistentStores { storeDescription, error in
+            if let error = error { fatalError("Core Data container error: \(error)") }
+        }
+        
         homeserver = Homeserver.saved ?? .default
         if accessToken != nil { initialSync() }
+    }
+    
+    private func save() {
+        guard backgroundContext.hasChanges else { return }
+        try? backgroundContext.save()
     }
     
     private func urlComponents(path: String, queryItems: [URLQueryItem]? = nil) -> URLComponents {
@@ -134,7 +149,9 @@ public class Client: ObservableObject {
     }
     
     public func sendMessage(body: String, room: Room) {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/send/m.room.message",
+        guard let roomID = room.id else { return }
+        
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
@@ -148,7 +165,9 @@ public class Client: ObservableObject {
     }
     
     public func sendReaction(text: String, to event: Message, in room: Room) {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/send/m.reaction",
+        guard let roomID = room.id else { return }
+        
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
@@ -162,13 +181,14 @@ public class Client: ObservableObject {
     }
     
     private func getName(of room: Room) {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/state/m.room.name/",
+        guard let roomID = room.id else { return }
+        
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/state/m.room.name/",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
         apiTask(with: URLRequest(url: components.url!), as: RoomNameResponse.self) { response in
-            DispatchQueue.main.async {
-                room.name = response.name
-            }
+            room.name = response.name
+            self.save()
         } onFailure: { errorResponse in
             print(errorResponse)
             DispatchQueue.main.async {
@@ -179,15 +199,17 @@ public class Client: ObservableObject {
     }
     
     private func getMembers(in room: Room) {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/members",
+        guard let roomID = room.id else { return }
+        
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/members",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
         apiTask(with: URLRequest(url: components.url!), as: Members.self) { response in
             let members = response.members.filter { $0.type == "m.room.member" && $0.content.membership == .join }
-                                          .map { Member(event: $0, context: self.context) }
-            DispatchQueue.main.async {
-                room.members = NSSet(array: members)
-            }
+                                          .map { Member(event: $0, context: self.backgroundContext) }
+            
+            room.roomMembers = NSSet(array: members)
+            self.save()
         }
         .resume()
     }
@@ -208,11 +230,13 @@ public class Client: ObservableObject {
         apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
             let joinedRooms = response.rooms.joined
             let rooms: [Room] = joinedRooms.keys.map { key in
-                Room(id: key, joinedRoom: joinedRooms[key]!, context: self.context)
+                Room(id: key, joinedRoom: joinedRooms[key]!, context: self.backgroundContext)
             }
             
+            self.save()
+            
             DispatchQueue.main.async {
-                self.rooms = rooms
+                self.rooms = rooms;     #warning("Replace with fetch query")
                 self.status = .idle
                 self.nextBatch = response.nextBatch
                 self.longPoll()
@@ -243,7 +267,7 @@ public class Client: ObservableObject {
         apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
             let joinedRooms = response.rooms.joined
             let rooms: [Room] = joinedRooms.keys.map { key in
-                Room(id: key, joinedRoom: joinedRooms[key]!, context: self.context)
+                Room(id: key, joinedRoom: joinedRooms[key]!, context: self.backgroundContext)
             }
             
             DispatchQueue.main.async {
@@ -264,7 +288,9 @@ public class Client: ObservableObject {
     }
     
     public func loadMoreMessages(in room: Room) {
-        var components = urlComponents(path: "/_matrix/client/r0/rooms/\(room.id)/messages")
+        guard let roomID = room.id else { return }
+        
+        var components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/messages")
         components.queryItems = [
             URLQueryItem(name: "from", value: room.previousBatch),
             URLQueryItem(name: "dir", value: "b"),
@@ -273,15 +299,15 @@ public class Client: ObservableObject {
         
         apiTask(with: URLRequest(url: components.url!), as: MessagesResponse.self) { response in
             let messages = response.events?.filter { $0.type == "m.room.message" }
-                                           .compactMap { Message(roomEvent: $0, context: self.context) }
+                                           .compactMap { Message(roomEvent: $0, context: self.backgroundContext) }
             
-            DispatchQueue.main.async {
-                if let messages = messages {
-                    room.addToMessages(NSSet(array: messages))
-                }
-                
-                room.previousBatch = response.endToken
+            if let messages = messages {
+                room.addToRoomMessages(NSSet(array: messages))
             }
+            
+            room.previousBatch = response.endToken
+            
+            self.save()
         }
         .resume()
     }
