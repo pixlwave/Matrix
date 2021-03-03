@@ -16,12 +16,14 @@ public class Client: ObservableObject {
         didSet { UserDefaults.standard.set(userID, forKey: "userID")}
     }
     
-    @Published public private(set) var rooms: [Room] = []
-    
     private var nextBatch: String?
     
-    private var container: NSPersistentContainer
-    lazy private var backgroundContext: NSManagedObjectContext = container.newBackgroundContext()   // lazy creation on background thread
+    public var container: NSPersistentContainer
+    lazy private var backgroundContext: NSManagedObjectContext = {
+        let context = container.newBackgroundContext()
+        context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
+        return context
+    }()     // lazily created on the background thread
     
     public init() {
         guard
@@ -187,13 +189,14 @@ public class Client: ObservableObject {
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
         apiTask(with: URLRequest(url: components.url!), as: RoomNameResponse.self) { response in
+            room.objectWillChange.send()
             room.name = response.name
             self.save()
         } onFailure: { errorResponse in
             print(errorResponse)
-            DispatchQueue.main.async {
-//                room.name = room.members.filter { $0.userID != self.userID }.map { $0.displayName ?? $0.userID }.joined(separator: ", ")
-            }
+            room.objectWillChange.send()
+            room.name = room.members.filter { $0.id != self.userID }.compactMap { $0.displayName ?? $0.id }.joined(separator: ", ")
+            self.save()
         }
         .resume()
     }
@@ -236,7 +239,6 @@ public class Client: ObservableObject {
             self.save()
             
             DispatchQueue.main.async {
-                self.rooms = rooms;     #warning("Replace with fetch query")
                 self.status = .idle
                 self.nextBatch = response.nextBatch
                 self.longPoll()
@@ -266,23 +268,23 @@ public class Client: ObservableObject {
         
         apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
             let joinedRooms = response.rooms.joined
-            let rooms: [Room] = joinedRooms.keys.map { key in
+            joinedRooms.keys.forEach { key in
                 Room(id: key, joinedRoom: joinedRooms[key]!, context: self.backgroundContext)
             }
             
-            DispatchQueue.main.async {
-                rooms.forEach { room in
-                    if let index = self.rooms.firstIndex(where: { room.id == $0.id }) {
-//                        self.rooms[index].events.append(contentsOf: room.events)
-                    } else {
-                        self.rooms.append(room)
-                        self.getName(of: room)
-                    }
-                }
-                
-                self.nextBatch = response.nextBatch
-                self.longPoll()
-            }
+            self.save()
+            
+//            rooms.forEach { room in
+//                if let index = self.rooms.firstIndex(where: { room.id == $0.id }) {
+//                    self.rooms[index].events.append(contentsOf: room.events)
+//                } else {
+//                    self.rooms.append(room)
+//                    self.getName(of: room)
+//                }
+//            }
+            
+            self.nextBatch = response.nextBatch
+            self.longPoll()
         }
         .resume()
     }
