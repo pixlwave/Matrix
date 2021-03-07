@@ -7,10 +7,10 @@ struct RegisterUserBody: Codable {
 }
 
 
-struct RegisterUserResponse: Codable {
-    let accessToken: String
-    let homeServer: String
-    let userID: String
+public struct RegisterUserResponse: Codable {
+    public let accessToken: String
+    public let homeServer: String
+    public let userID: String
     
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"

@@ -1,13 +1,13 @@
 import Foundation
 
-struct StateEvent: Codable {
-    let content: StateEventContent
-    let type: String
-    let eventID: String
-    let sender: String
-    let timestamp: Int
-//    let unsigned: UnsignedData
-    let stateKey: String
+public struct StateEvent: Codable {
+    public let content: StateEventContent
+    public let type: String
+    public let eventID: String
+    public let sender: String
+    public let timestamp: Int
+//    public let unsigned: UnsignedData
+    public let stateKey: String
     
     enum CodingKeys: String, CodingKey {
         case content
@@ -18,11 +18,11 @@ struct StateEvent: Codable {
         case stateKey = "state_key"
     }
     
-    struct StateEventContent: Codable {
-        let avatarURL: String?
-        let displayName: String?
-        let membership: Membership?
-        let isDirect: Bool?
+    public struct StateEventContent: Codable {
+        public let avatarURL: String?
+        public let displayName: String?
+        public let membership: Membership?
+        public let isDirect: Bool?
         
         enum CodingKeys: String, CodingKey {
             case avatarURL = "avatar_url"
@@ -31,7 +31,7 @@ struct StateEvent: Codable {
             case isDirect = "is_direct"
         }
         
-        enum Membership: String, Codable {
+        public enum Membership: String, Codable {
             case invite, join, knock, leave, ban
         }
     }

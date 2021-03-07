@@ -1,5 +1,5 @@
 import Foundation
 
-struct RoomNameResponse: Codable {
-    let name: String
+public struct RoomNameResponse: Codable {
+    public let name: String
 }

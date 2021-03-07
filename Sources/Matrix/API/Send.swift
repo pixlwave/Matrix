@@ -20,10 +20,10 @@ struct SendReactionBody: Codable {
 }
 
 
-struct Relationship: Codable {
-    let type: RelationshipType?
-    let eventID: String?
-    let key: String?
+public struct Relationship: Codable {
+    public let type: RelationshipType?
+    public let eventID: String?
+    public let key: String?
     
     enum CodingKeys: String, CodingKey {
         case type = "rel_type"
@@ -31,15 +31,15 @@ struct Relationship: Codable {
         case key
     }
     
-    enum RelationshipType: String, Codable {
+    public enum RelationshipType: String, Codable {
         case annotation = "m.annotation"
         case replace = "m.replace"
         case reference = "m.reference"
     }
 }
 
-struct SendResponse: Codable {
-    let eventID: String
+public struct SendResponse: Codable {
+    public let eventID: String
     
     enum CodingKeys: String, CodingKey {
         case eventID = "event_id"

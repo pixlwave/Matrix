@@ -11,8 +11,8 @@ struct CreateRoomBody: Codable {
 }
 
 
-struct CreateRoomResponse: Codable {
-    let roomID: String
+public struct CreateRoomResponse: Codable {
+    public let roomID: String
     
     enum CodingKeys: String, CodingKey {
         case roomID = "room_id"

@@ -1,10 +1,10 @@
 import Foundation
 
-struct MessagesResponse: Codable {
-    let startToken: String?
-    let endToken: String?
-    let events: [RoomEvent]?
-    let stateEvents: [StateEvent]?
+public struct MessagesResponse: Codable {
+    public let startToken: String?
+    public let endToken: String?
+    public let events: [RoomEvent]?
+    public let stateEvents: [StateEvent]?
     
     enum CodingKeys: String, CodingKey {
         case startToken = "start"

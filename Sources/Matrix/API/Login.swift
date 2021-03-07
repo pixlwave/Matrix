@@ -13,11 +13,11 @@ struct LoginUserBody: Codable {
 }
 
 
-struct LoginUserResponse: Codable {
-    let userID: String
-    let accessToken: String
-    let homeServer: String
-    let deviceID: String
+public struct LoginUserResponse: Codable {
+    public let userID: String
+    public let accessToken: String
+    public let homeServer: String
+    public let deviceID: String
     
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"

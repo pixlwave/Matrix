@@ -1,8 +1,8 @@
 import Foundation
 
-struct ErrorResponse: Error, Codable {
-    let code: String
-    let message: String
+public struct ErrorResponse: Error, Codable {
+    public let code: String
+    public let message: String
     
     enum CodingKeys: String, CodingKey {
         case code = "errcode"
