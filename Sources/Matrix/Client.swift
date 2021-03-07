@@ -1,49 +1,13 @@
-import CoreData
+import Foundation
+import Combine
 
-public class Client: ObservableObject {
+public class Client {
     
-    public var homeserver: Homeserver {
+    public var homeserver: Homeserver = Homeserver.saved ?? .default {
         didSet { homeserver.save() }
     }
     
     @KeychainItem(account: "uk.pixlwave.Matrix") var accessToken: String?
-    
-    public enum Status { case signedOut, syncing, idle, syncError }
-    
-    @Published public private(set) var status: Status = .signedOut
-    
-    @Published public private(set) var userID = UserDefaults.standard.string(forKey: "userID") {
-        didSet { UserDefaults.standard.set(userID, forKey: "userID")}
-    }
-    
-    private var nextBatch: String?
-    
-    public var container: NSPersistentContainer
-    lazy private var backgroundContext: NSManagedObjectContext = {
-        let context = container.newBackgroundContext()
-        context.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
-        return context
-    }()     // lazily created on the background thread
-    
-    public init() {
-        guard
-            let modelURL = Bundle.module.url(forResource: "Matrix", withExtension: "momd"),
-            let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL)
-        else { fatalError("Unable to find Core Data Model") }
-        
-        container = NSPersistentContainer(name: "Matrix", managedObjectModel: managedObjectModel)
-        container.loadPersistentStores { storeDescription, error in
-            if let error = error { fatalError("Core Data container error: \(error)") }
-        }
-        
-        homeserver = Homeserver.saved ?? .default
-        if accessToken != nil { initialSync() }
-    }
-    
-    private func save() {
-        guard backgroundContext.hasChanges else { return }
-        try? backgroundContext.save()
-    }
     
     private func urlComponents(path: String, queryItems: [URLQueryItem]? = nil) -> URLComponents {
         var components = homeserver.components
@@ -52,6 +16,7 @@ public class Client: ObservableObject {
         return components
     }
     
+    #warning("Remove me.")
     private func apiTask<T>(with request: URLRequest,
                             as type: T.Type,
                             onSuccess: @escaping (T) -> (),
@@ -80,63 +45,46 @@ public class Client: ObservableObject {
         }
     }
     
-    public func register(username: String, password: String) {
+    private func apiPublisher<T: Decodable>(with request: URLRequest, as type: T.Type) -> AnyPublisher<T, Error> {
+        URLSession.shared.dataTaskPublisher(for: request)
+            .map(\.data)
+            .decode(type: type, decoder: JSONDecoder())
+            .eraseToAnyPublisher()
+    }
+    
+    func register(username: String, password: String) -> AnyPublisher<RegisterUserResponse, Error> {
         let components = urlComponents(path: "/_matrix/client/r0/register")
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
         let bodyObject = RegisterUserBody(username: username, password: password, auth: ["type": "m.login.dummy"])
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        apiTask(with: request, as: RegisterUserResponse.self) { response in
-            DispatchQueue.main.async {
-                self.userID = response.userID
-//                self.homeserver = response.homeServer
-                self.accessToken = response.accessToken
-            }
-        }
-        .resume()
+        return apiPublisher(with: request, as: RegisterUserResponse.self)
     }
     
-    public func login(username: String, password: String) {
+    func login(username: String, password: String) -> AnyPublisher<LoginUserResponse, Error> {
         let components = urlComponents(path: "/_matrix/client/r0/login")
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
         let bodyObject = LoginUserBody(type: "m.login.password", username: username, password: password)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        apiTask(with: request, as: LoginUserResponse.self) { response in
-            DispatchQueue.main.async {
-                self.userID = response.userID
-//                self.homeserver = response.homeServer
-                self.accessToken = response.accessToken
-                self.initialSync()
-            }
-        }
-        .resume()
+        return apiPublisher(with: request, as: LoginUserResponse.self)
     }
     
-    public func logout() {
+    public func logout() -> AnyPublisher<Bool, URLError> {
         let components = urlComponents(path: "/_matrix/client/r0/logout",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard
-                error == nil,
-                let httpResponse = response as? HTTPURLResponse,
-                httpResponse.statusCode == 200
-            else { return }
-            
-            DispatchQueue.main.async {
-                self.accessToken = nil
-                self.status = .signedOut
-            }
-        }
-        .resume()
+        return URLSession.shared.dataTaskPublisher(for: request)
+            .map { $0.response as? HTTPURLResponse }
+            .map { $0?.statusCode == 200 }
+            .eraseToAnyPublisher()
     }
     
-    public func createRoom(name: String) {
+    func createRoom(name: String) -> AnyPublisher<CreateRoomResponse, Error> {
         let components = urlComponents(path: "/_matrix/client/r0/createRoom",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -144,15 +92,10 @@ public class Client: ObservableObject {
         let bodyObject = CreateRoomBody(name: name, roomAliasName: nil)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        apiTask(with: request, as: CreateRoomResponse.self) { response in
-            print(response)
-        }
-        .resume()
+        return apiPublisher(with: request, as: CreateRoomResponse.self)
     }
     
-    public func sendMessage(body: String, room: Room) {
-        guard let roomID = room.id else { return }
-        
+    func sendMessage(body: String, roomID: String) -> AnyPublisher<SendResponse, Error> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -160,157 +103,68 @@ public class Client: ObservableObject {
         let bodyObject = SendMessageBody(type: "m.text", body: body)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        apiTask(with: request, as: SendResponse.self) { response in
-            print(response)
-        }
-        .resume()
+        return apiPublisher(with: request, as: SendResponse.self)
     }
     
-    public func sendReaction(text: String, to event: Message, in room: Room) {
-        guard let roomID = room.id else { return }
-        
+    func sendReaction(text: String, to eventID: String, in roomID: String) -> AnyPublisher<SendResponse, Error> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
-        let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: event.id, key: text))
+        let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: eventID, key: text))
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
-        apiTask(with: request, as: SendResponse.self) { response in
-            print(response)
-        }
-        .resume()
+        return apiPublisher(with: request, as: SendResponse.self)
     }
     
-    private func getName(of room: Room) {
-        guard let roomID = room.id else { return }
-        
+    func getName(of roomID: String) -> AnyPublisher<RoomNameResponse, Error> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/state/m.room.name/",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
+        let request = URLRequest(url: components.url!)
         
-        apiTask(with: URLRequest(url: components.url!), as: RoomNameResponse.self) { response in
-            room.objectWillChange.send()
-            room.name = response.name
-            self.save()
-        } onFailure: { errorResponse in
-            print(errorResponse)
-            room.objectWillChange.send()
-            room.name = room.members.filter { $0.id != self.userID }.compactMap { $0.displayName ?? $0.id }.joined(separator: ", ")
-            self.save()
-        }
-        .resume()
+        return apiPublisher(with: request, as: RoomNameResponse.self)
     }
     
-    private func getMembers(in room: Room) {
-        guard let roomID = room.id else { return }
-        
+    func getMembers(in roomID: String) -> AnyPublisher<Members, Error> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/members",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
+        let request = URLRequest(url: components.url!)
         
-        apiTask(with: URLRequest(url: components.url!), as: Members.self) { response in
-            let members = response.members.filter { $0.type == "m.room.member" && $0.content.membership == .join }
-                                          .map { Member(event: $0, context: self.backgroundContext) }
-            
-            room.roomMembers = NSSet(array: members)
-            self.save()
-        }
-        .resume()
+        return apiPublisher(with: request, as: Members.self)
     }
     
     private let initialSyncFilter = """
     {"room":{"state":{"lazy_load_members":true},"timeline":{"limit":1}}}
     """
     
-    public func initialSync() {
-        status = .syncing
+    func sync(since: String? = nil, timeout: Int? = nil) -> AnyPublisher<SyncResponse, Error> {
+        var components = urlComponents(path: "/_matrix/client/r0/sync",
+                                       queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
-        var components = urlComponents(path: "/_matrix/client/r0/sync")
-        components.queryItems = [
-            URLQueryItem(name: "filter", value: initialSyncFilter),
-            URLQueryItem(name: "access_token", value: accessToken)
-        ]
-        
-        apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
-            let joinedRooms = response.rooms.joined
-            let rooms: [Room] = joinedRooms.keys.map { key in
-                Room(id: key, joinedRoom: joinedRooms[key]!, context: self.backgroundContext)
-            }
-            
-            self.save()
-            
-            DispatchQueue.main.async {
-                self.status = .idle
-                self.nextBatch = response.nextBatch
-                self.longPoll()
-                
-                rooms.forEach {
-                    self.getName(of: $0)
-                    self.getMembers(in: $0)
-                    self.loadMoreMessages(in: $0)
-                }
-            }
-        } onFailure: { errorResponse in
-            print(errorResponse)
-            DispatchQueue.main.async {
-                self.status = .syncError
-            }
+        if let since = since {
+            components.queryItems?.append(URLQueryItem(name: "since", value: since))
+        } else {
+            components.queryItems?.append(URLQueryItem(name: "filter", value: initialSyncFilter))
         }
-        .resume()
+        
+        if let timeout = timeout {
+            components.queryItems?.append(URLQueryItem(name: "timeout", value: String(timeout)))
+        }
+        
+        let request = URLRequest(url: components.url!)
+        
+        return apiPublisher(with: request, as: SyncResponse.self)
     }
     
-    public func longPoll() {
-        var components = urlComponents(path: "/_matrix/client/r0/sync")
-        components.queryItems = [
-            URLQueryItem(name: "since", value: nextBatch),
-            URLQueryItem(name: "timeout", value: "5000"),
-            URLQueryItem(name: "access_token", value: accessToken)
-        ]
-        
-        apiTask(with: URLRequest(url: components.url!), as: SyncResponse.self) { response in
-            let joinedRooms = response.rooms.joined
-            joinedRooms.keys.forEach { key in
-                Room(id: key, joinedRoom: joinedRooms[key]!, context: self.backgroundContext)
-            }
-            
-            self.save()
-            
-//            rooms.forEach { room in
-//                if let index = self.rooms.firstIndex(where: { room.id == $0.id }) {
-//                    self.rooms[index].events.append(contentsOf: room.events)
-//                } else {
-//                    self.rooms.append(room)
-//                    self.getName(of: room)
-//                }
-//            }
-            
-            self.nextBatch = response.nextBatch
-            self.longPoll()
-        }
-        .resume()
-    }
-    
-    public func loadMoreMessages(in room: Room) {
-        guard let roomID = room.id else { return }
-        
+    func loadMessages(in roomID: String, from paginationToken: String) -> AnyPublisher<MessagesResponse, Error> {
         var components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/messages")
         components.queryItems = [
-            URLQueryItem(name: "from", value: room.previousBatch),
+            URLQueryItem(name: "from", value: paginationToken),
             URLQueryItem(name: "dir", value: "b"),
             URLQueryItem(name: "access_token", value: accessToken)
         ]
+        let request = URLRequest(url: components.url!)
         
-        apiTask(with: URLRequest(url: components.url!), as: MessagesResponse.self) { response in
-            let messages = response.events?.filter { $0.type == "m.room.message" }
-                                           .compactMap { Message(roomEvent: $0, context: self.backgroundContext) }
-            
-            if let messages = messages {
-                room.addToRoomMessages(NSSet(array: messages))
-            }
-            
-            room.previousBatch = response.endToken
-            
-            self.save()
-        }
-        .resume()
+        return apiPublisher(with: request, as: MessagesResponse.self)
     }
 }
