@@ -18,39 +18,9 @@ public class Client {
         return components
     }
     
-    #warning("Remove me.")
-    private func apiTask<T>(with request: URLRequest,
-                            as type: T.Type,
-                            onSuccess: @escaping (T) -> (),
-                            onFailure: ((ErrorResponse) -> ())? = nil) -> URLSessionDataTask where T: Decodable {
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print(error)
-                onFailure?(ErrorResponse(code: "URLSession Error", message: error.localizedDescription))
-                return
-            }
-            
-            guard let data = data else {
-                print("Missing Response Data")
-                onFailure?(ErrorResponse(code: "Missing Response Data", message: "Empty response"))
-                return
-            }
-            let result = data.decode(T.self)
-            
-            switch result {
-            case .success(let response):
-                onSuccess(response)
-            case .failure(let errorResponse):
-                print(errorResponse)
-                onFailure?(errorResponse)
-            }
-        }
-    }
-    
     private func apiPublisher<T: Decodable>(with request: URLRequest, as type: T.Type) -> AnyPublisher<T, Error> {
         URLSession.shared.dataTaskPublisher(for: request)
-            .map(\.data)
-            .decode(type: type, decoder: JSONDecoder())
+            .tryMap { try $0.data.decode(type) }
             .eraseToAnyPublisher()
     }
     
