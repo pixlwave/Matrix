@@ -18,13 +18,24 @@ public class Client {
         return components
     }
     
-    private func apiPublisher<T: Decodable>(with request: URLRequest, as type: T.Type) -> AnyPublisher<T, Error> {
+    private func apiPublisher<T: Decodable>(with request: URLRequest, as type: T.Type) -> AnyPublisher<T, MatrixError> {
         URLSession.shared.dataTaskPublisher(for: request)
             .tryMap { try $0.data.decode(type) }
+            .mapError { error in
+                if let error = error as? URLError {
+                    return .urlError(error: error)
+                } else if let error = error as? DecodingError {
+                    return .decodeError(error: error)
+                } else if let error = error as? ErrorResponse {
+                    return .errorResponse(error: error)
+                } else {
+                    return .unknown(error: error)
+                }
+            }
             .eraseToAnyPublisher()
     }
     
-    public func register(username: String, password: String) -> AnyPublisher<RegisterUserResponse, Error> {
+    public func register(username: String, password: String) -> AnyPublisher<RegisterUserResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/register")
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
@@ -34,7 +45,7 @@ public class Client {
         return apiPublisher(with: request, as: RegisterUserResponse.self)
     }
     
-    public func login(username: String, password: String) -> AnyPublisher<LoginUserResponse, Error> {
+    public func login(username: String, password: String) -> AnyPublisher<LoginUserResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/login")
         var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
@@ -56,7 +67,7 @@ public class Client {
             .eraseToAnyPublisher()
     }
     
-    public func createRoom(name: String) -> AnyPublisher<CreateRoomResponse, Error> {
+    public func createRoom(name: String) -> AnyPublisher<CreateRoomResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/createRoom",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -67,7 +78,7 @@ public class Client {
         return apiPublisher(with: request, as: CreateRoomResponse.self)
     }
     
-    public func sendMessage(body: String, roomID: String) -> AnyPublisher<SendResponse, Error> {
+    public func sendMessage(body: String, roomID: String) -> AnyPublisher<SendResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -78,7 +89,7 @@ public class Client {
         return apiPublisher(with: request, as: SendResponse.self)
     }
     
-    public func sendReaction(text: String, to eventID: String, in roomID: String) -> AnyPublisher<SendResponse, Error> {
+    public func sendReaction(text: String, to eventID: String, in roomID: String) -> AnyPublisher<SendResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         var request = URLRequest(url: components.url!)
@@ -89,7 +100,7 @@ public class Client {
         return apiPublisher(with: request, as: SendResponse.self)
     }
     
-    public func getName(of roomID: String) -> AnyPublisher<RoomNameResponse, Error> {
+    public func getName(of roomID: String) -> AnyPublisher<RoomNameResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/state/m.room.name/",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         let request = URLRequest(url: components.url!)
@@ -97,7 +108,7 @@ public class Client {
         return apiPublisher(with: request, as: RoomNameResponse.self)
     }
     
-    public func getMembers(in roomID: String) -> AnyPublisher<MembersResponse, Error> {
+    public func getMembers(in roomID: String) -> AnyPublisher<MembersResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/members",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         let request = URLRequest(url: components.url!)
@@ -109,7 +120,7 @@ public class Client {
     {"room":{"state":{"lazy_load_members":true},"timeline":{"limit":1}}}
     """
     
-    public func sync(since: String? = nil, timeout: Int? = nil) -> AnyPublisher<SyncResponse, Error> {
+    public func sync(since: String? = nil, timeout: Int? = nil) -> AnyPublisher<SyncResponse, MatrixError> {
         var components = urlComponents(path: "/_matrix/client/r0/sync",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         
@@ -128,7 +139,7 @@ public class Client {
         return apiPublisher(with: request, as: SyncResponse.self)
     }
     
-    public func loadMessages(in roomID: String, from paginationToken: String) -> AnyPublisher<MessagesResponse, Error> {
+    public func loadMessages(in roomID: String, from paginationToken: String) -> AnyPublisher<MessagesResponse, MatrixError> {
         var components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/messages")
         components.queryItems = [
             URLQueryItem(name: "from", value: paginationToken),
