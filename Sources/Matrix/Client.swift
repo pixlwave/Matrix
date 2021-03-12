@@ -7,7 +7,7 @@ public class Client {
         didSet { homeserver.save() }
     }
     
-    @KeychainItem(account: "uk.pixlwave.Matrix") public var accessToken: String?
+    public var accessToken: String?
     
     public init() { }
     
