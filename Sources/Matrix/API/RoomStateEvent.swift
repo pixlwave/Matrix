@@ -5,7 +5,7 @@ public struct StateEvent: Codable {
     public let type: String
     public let eventID: String
     public let sender: String
-    public let timestamp: Int
+    public let date: Date
 //    public let unsigned: UnsignedData
     public let stateKey: String
     
@@ -14,7 +14,7 @@ public struct StateEvent: Codable {
         case type
         case eventID = "event_id"
         case sender
-        case timestamp = "origin_server_ts"
+        case date = "origin_server_ts"
         case stateKey = "state_key"
     }
     
