@@ -3,9 +3,7 @@ import Combine
 
 public class Client {
     
-    public var homeserver: Homeserver = Homeserver.saved ?? .default {
-        didSet { homeserver.save() }
-    }
+    public var homeserver: Homeserver = .default
     
     public var accessToken: String?
     

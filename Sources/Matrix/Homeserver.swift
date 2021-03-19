@@ -25,17 +25,16 @@ public struct Homeserver: Codable {
         self.components = components
     }
     
-    func save() {
-        guard let data = try? JSONEncoder().encode(self) else { return }
-        UserDefaults.standard.set(data, forKey: "homeserver")
+    public init?(data: Data) {
+        guard let decoded = try? JSONDecoder().decode(Homeserver.self, from: data) else { return nil }
+        self = decoded
     }
     
-    static var saved: Homeserver? {
-        guard let data = UserDefaults.standard.data(forKey: "homeserver") else { return nil }
-        return try? JSONDecoder().decode(Homeserver.self, from: data)
+    public func data() -> Data? {
+        try? JSONEncoder().encode(self)
     }
     
-    static var `default`: Homeserver{
+    public static var `default`: Homeserver {
         Homeserver(scheme: "https", host: "matrix-federation.matrix.org", port: 443)
     }
 }
