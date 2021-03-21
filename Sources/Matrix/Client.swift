@@ -111,11 +111,12 @@ public class Client {
     }
     
     // 9.5.6 GET /_matrix/client/r0/rooms/{roomId}/messages
-    public func loadMessages(in roomID: String, from paginationToken: String) -> AnyPublisher<MessagesResponse, MatrixError> {
+    public func loadMessages(in roomID: String, from paginationToken: String, count messageCount: UInt = 10) -> AnyPublisher<MessagesResponse, MatrixError> {
         var components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/messages")
         components.queryItems = [
             URLQueryItem(name: "from", value: paginationToken),
             URLQueryItem(name: "dir", value: "b"),
+            URLQueryItem(name: "limit", value: String(messageCount)),
             URLQueryItem(name: "access_token", value: accessToken)
         ]
         let request = URLRequest(url: components.url!)
