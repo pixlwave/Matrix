@@ -102,7 +102,7 @@ public class Client {
     }
     
     // 9.5.4 GET /_matrix/client/r0/rooms/{roomId}/members
-    public func getMembers(in roomID: String) -> AnyPublisher<MembersResponse, MatrixError> {
+    public func getMembers(of roomID: String) -> AnyPublisher<MembersResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/members",
                                        queryItems: [URLQueryItem(name: "access_token", value: accessToken)])
         let request = URLRequest(url: components.url!)
