@@ -19,12 +19,17 @@ public struct StateEvent: Codable {
     }
     
     public struct StateEventContent: Codable {
+        // m.room.name
+        public let name: String?
+        
+        // m.room.membership
         public let avatarURL: String?
         public let displayName: String?
         public let membership: Membership?
         public let isDirect: Bool?
         
         enum CodingKeys: String, CodingKey {
+            case name
             case avatarURL = "avatar_url"
             case displayName = "displayname"
             case membership
