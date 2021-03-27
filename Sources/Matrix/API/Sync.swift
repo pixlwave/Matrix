@@ -47,7 +47,7 @@ public struct JoinedRooms: Codable {
     }
     
     public struct State: Codable {
-        public let events: [StateEvent]
+        public let events: [RoomEvent]
     }
     
     public struct Timeline: Codable {
