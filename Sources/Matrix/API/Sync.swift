@@ -32,7 +32,14 @@ public struct JoinedRooms: Codable {
     public let timeline: Timeline
 //    public let ephemeral: Ephemeral
 //    public let account_data: AccountData
-//    public let unread_notifications: UnreadNotificationCounts
+    public let unreadNotifications: UnreadNotificationCounts
+    
+    enum CodingKeys: String, CodingKey {
+        case summary
+        case state
+        case timeline
+        case unreadNotifications = "unread_notifications"
+    }
     
     public struct RoomSummary: Codable {
         public let heroes: [String]?
@@ -59,6 +66,16 @@ public struct JoinedRooms: Codable {
             case events
             case isLimited = "limited"
             case previousBatch = "prev_batch"
+        }
+    }
+    
+    public struct UnreadNotificationCounts: Codable {
+        public let highlightCount: Int
+        public let notificationCount: Int
+        
+        enum CodingKeys: String, CodingKey {
+            case highlightCount = "highlight_count"
+            case notificationCount = "notification_count"
         }
     }
 }
