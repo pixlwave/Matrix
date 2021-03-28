@@ -166,4 +166,16 @@ public class Client {
         
         return apiPublisher(with: request, as: CreateRoomResponse.self)
     }
+    
+    // 13.5.2.1 POST /_matrix/client/r0/rooms/{roomId}/receipt/{receiptType}/{eventId}
+    public func sendReadReceipt(for eventID: String, in roomID: String) -> AnyPublisher<Bool, URLError> {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/receipt/m.read/\(eventID)")
+        var request = urlRequest(url: components.url!, withAuthorization: true)
+        request.httpMethod = "POST"
+        
+        return URLSession.shared.dataTaskPublisher(for: request)
+            .map { $0.response as? HTTPURLResponse }
+            .map { $0?.statusCode == 200 }
+            .eraseToAnyPublisher()
+    }
 }
