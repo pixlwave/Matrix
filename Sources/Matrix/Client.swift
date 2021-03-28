@@ -109,8 +109,13 @@ public class Client {
     }
     
     // 9.5.4 GET /_matrix/client/r0/rooms/{roomId}/members
-    public func getMembers(of roomID: String) -> AnyPublisher<MembersResponse, MatrixError> {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/members")
+    public func getMembers(of roomID: String, at paginationToken: String? = nil) -> AnyPublisher<MembersResponse, MatrixError> {
+        var components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/members")
+        
+        if let paginationToken = paginationToken {
+            components.queryItems?.append(URLQueryItem(name: "at", value: paginationToken))
+        }
+        
         let request = urlRequest(url: components.url!, withAuthorization: true)
         
         return apiPublisher(with: request, as: MembersResponse.self)
