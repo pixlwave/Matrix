@@ -16,13 +16,13 @@ struct LoginUserBody: Codable {
 public struct LoginUserResponse: Codable {
     public let userID: String
     public let accessToken: String
-    public let homeServer: String
+    public let homeserver: String
     public let deviceID: String
     
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
         case accessToken = "access_token"
-        case homeServer = "home_server"
+        case homeserver = "home_server"
         case deviceID = "device_id"
     }
 }
