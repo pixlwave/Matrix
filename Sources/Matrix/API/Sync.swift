@@ -15,7 +15,7 @@ public struct SyncResponse: Codable {
     }
     
     public struct Rooms: Codable {
-        public let joined: [String: JoinedRooms]
+        public let joined: [String: JoinedRoom]
 //        public let invite: InvitedRooms
 //        public let leave: LeftRooms
         
@@ -26,7 +26,7 @@ public struct SyncResponse: Codable {
 }
 
 
-public struct JoinedRooms: Codable {
+public struct JoinedRoom: Codable {
     public let summary: RoomSummary?
     public let state: State
     public let timeline: Timeline
