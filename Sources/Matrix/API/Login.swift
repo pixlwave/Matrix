@@ -4,11 +4,13 @@ struct LoginUserBody: Codable {
     let type: String
     let username: String
     let password: String
+    let displayName: String?
     
     enum CodingKeys: String, CodingKey {
         case type
         case username = "user"
         case password
+        case displayName = "initial_device_display_name"
     }
 }
 

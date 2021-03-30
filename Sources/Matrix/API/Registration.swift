@@ -4,6 +4,14 @@ struct RegisterUserBody: Codable {
     let username: String
     let password: String
     let auth: [String: String]
+    let displayName: String?
+    
+    enum CodingKeys: String, CodingKey {
+        case username
+        case password
+        case auth
+        case displayName = "initial_device_display_name"
+    }
 }
 
 

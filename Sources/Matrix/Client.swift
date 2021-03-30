@@ -44,12 +44,14 @@ public class Client {
     }
     
     // 5.5.2 POST /_matrix/client/r0/login
-    public func login(username: String, password: String) -> AnyPublisher<LoginUserResponse, MatrixError> {
+    public func login(username: String, password: String, displayName: String? = nil) -> AnyPublisher<LoginUserResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/login")
+        
         var request = urlRequest(url: components.url!, withAuthorization: false)
         request.httpMethod = "POST"
-        let bodyObject = LoginUserBody(type: "m.login.password", username: username, password: password)
-        request.httpBody = try? JSONEncoder().encode(bodyObject)
+        
+        let body = LoginUserBody(type: "m.login.password", username: username, password: password, displayName: displayName)
+        request.httpBody = try? JSONEncoder().encode(body)
         
         return apiPublisher(with: request, as: LoginUserResponse.self)
     }
@@ -67,12 +69,14 @@ public class Client {
     }
     
     // 5.6.1 POST /_matrix/client/r0/register
-    public func register(username: String, password: String) -> AnyPublisher<RegisterUserResponse, MatrixError> {
+    public func register(username: String, password: String, displayName: String? = nil) -> AnyPublisher<RegisterUserResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/register")
+        
         var request = urlRequest(url: components.url!, withAuthorization: false)
         request.httpMethod = "POST"
-        let bodyObject = RegisterUserBody(username: username, password: password, auth: ["type": "m.login.dummy"])
-        request.httpBody = try? JSONEncoder().encode(bodyObject)
+        
+        let body = RegisterUserBody(username: username, password: password, auth: ["type": "m.login.dummy"], displayName: displayName)
+        request.httpBody = try? JSONEncoder().encode(body)
         
         return apiPublisher(with: request, as: RegisterUserResponse.self)
     }
