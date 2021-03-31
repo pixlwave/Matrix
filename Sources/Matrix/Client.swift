@@ -139,22 +139,22 @@ public class Client {
     }
     
     // 9.6.2 PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
-    public func sendMessage(body: String, roomID: String) -> AnyPublisher<SendResponse, MatrixError> {
+    public func sendMessage(_ message: String, in roomID: String) -> AnyPublisher<SendResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message")
         var request = urlRequest(url: components.url!, withAuthorization: true)
         request.httpMethod = "POST"
-        let bodyObject = SendMessageBody(type: "m.text", body: body)
+        let bodyObject = SendMessageBody(type: "m.text", body: message)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
         return apiPublisher(with: request, as: SendResponse.self)
     }
     
     // 9.6.2 PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
-    public func sendReaction(text: String, to eventID: String, in roomID: String) -> AnyPublisher<SendResponse, MatrixError> {
+    public func sendReaction(_ reaction: String, to eventID: String, in roomID: String) -> AnyPublisher<SendResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction")
         var request = urlRequest(url: components.url!, withAuthorization: true)
         request.httpMethod = "POST"
-        let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: eventID, key: text))
+        let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: eventID, key: reaction))
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
         return apiPublisher(with: request, as: SendResponse.self)
