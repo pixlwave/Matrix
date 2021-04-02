@@ -81,23 +81,24 @@ public class Client {
         return apiPublisher(with: request, as: RegisterUserResponse.self)
     }
     
-    private let initialSyncFilter = """
-    {"room":{"state":{"lazy_load_members":true},"timeline":{"limit":1}}}
-    """
-    
     // 9.4.1 GET /_matrix/client/r0/sync
-    public func sync(since: String? = nil, timeout: Int? = nil) -> AnyPublisher<SyncResponse, MatrixError> {
+    public func sync(filter: String? = nil, since: String? = nil, timeout: Int? = nil) -> AnyPublisher<SyncResponse, MatrixError> {
         var components = urlComponents(path: "/_matrix/client/r0/sync")
+        var queryItems = [URLQueryItem]()
+        
+        if let filter = filter {
+            queryItems.append(URLQueryItem(name: "filter", value: filter))
+        }
         
         if let since = since {
-            components.queryItems?.append(URLQueryItem(name: "since", value: since))
-        } else {
-            components.queryItems?.append(URLQueryItem(name: "filter", value: initialSyncFilter))
+            queryItems.append(URLQueryItem(name: "since", value: since))
         }
         
         if let timeout = timeout {
-            components.queryItems?.append(URLQueryItem(name: "timeout", value: String(timeout)))
+            queryItems.append(URLQueryItem(name: "timeout", value: String(timeout)))
         }
+        
+        components.queryItems = queryItems
         
         let request = urlRequest(url: components.url!, withAuthorization: true)
         
