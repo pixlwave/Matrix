@@ -16,11 +16,12 @@ public struct SyncResponse: Codable {
     
     public struct Rooms: Codable {
         public let joined: [String: JoinedRoom]
-//        public let invite: InvitedRooms
-//        public let leave: LeftRooms
+//        public let invite: InvitedRoom
+        public let left: [String: LeftRoom]
         
         enum CodingKeys: String, CodingKey {
             case joined = "join"
+            case left = "leave"
         }
     }
 }
@@ -78,4 +79,11 @@ public struct JoinedRoom: Codable {
             case notificationCount = "notification_count"
         }
     }
+}
+
+
+public struct LeftRoom: Codable {
+//    public let state: State
+//    public let timeline: Timeline
+//    public let account_data: AccountData
 }
