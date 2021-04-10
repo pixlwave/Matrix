@@ -35,23 +35,14 @@ public struct Relationship: Codable {
         case annotation = "m.annotation"
         case replace = "m.replace"
         case reference = "m.reference"
-    }
-}
-
-// implement a custom decoder that will set type to nil if
-// the string received can't be decoded as a RelationshipType.
-extension Relationship {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
+        case unknown
         
-        if let type = try? container.decodeIfPresent(RelationshipType.self, forKey: .type) {
-            self.type = type
-        } else {
-            self.type = nil
+        // implement a custom decoder that will decode as unknown if
+        // the string received can't be decoded as a one of the cases
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            self = RelationshipType(rawValue: (try? container.decode(String.self)) ?? "" ) ?? .unknown
         }
-        
-        self.eventID = try container.decodeIfPresent(String.self, forKey: .eventID)
-        self.key = try container.decodeIfPresent(String.self, forKey: .key)
     }
 }
 
