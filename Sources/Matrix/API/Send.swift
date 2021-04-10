@@ -38,6 +38,23 @@ public struct Relationship: Codable {
     }
 }
 
+// implement a custom decoder that will set type to nil if
+// the string received can't be decoded as a RelationshipType.
+extension Relationship {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        if let type = try? container.decodeIfPresent(RelationshipType.self, forKey: .type) {
+            self.type = type
+        } else {
+            self.type = nil
+        }
+        
+        self.eventID = try container.decodeIfPresent(String.self, forKey: .eventID)
+        self.key = try container.decodeIfPresent(String.self, forKey: .key)
+    }
+}
+
 public struct SendResponse: Codable {
     public let eventID: String
     
