@@ -2,7 +2,10 @@ import Foundation
 
 public struct Homeserver: Codable {
     let components: URLComponents
-    public var address: String? { components.url?.absoluteString }
+    
+    public var description: String? {
+        components.host
+    }
     
     init(scheme: String, host: String, port: Int) {
         var components = URLComponents()
@@ -12,15 +15,28 @@ public struct Homeserver: Codable {
         self.components = components
     }
     
+    #warning("If no scheme or port is included in the string, URLComponents is assigning the hostname to the path")
     public init?(string: String) {
         guard
             let url = URL(string: string),
-            var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            components.host != nil
         else { return nil }
         
         if components.scheme == nil { components.scheme = "https" }
-        if components.host == nil { components.host = "matrix-federation.matrix.org" }
-        if components.port == nil { components.port = components.scheme == "https" ? 443 : 8008 }
+        if components.port == nil && components.scheme == "http" { components.port = 8008 }
+        
+        self.components = components
+    }
+    
+    public init?(url: URL) {
+        guard
+            var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+            components.host != nil
+        else { return nil }
+        
+        if components.scheme == nil { components.scheme = "https" }
+        if components.port == nil && components.scheme == "http" { components.port = 8008 }
         
         self.components = components
     }

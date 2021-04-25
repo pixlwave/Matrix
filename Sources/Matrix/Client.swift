@@ -43,6 +43,26 @@ public class Client {
             .eraseToAnyPublisher()
     }
     
+    // 4.1.1 GET /.well-known/matrix/client
+    public func lookupHomeserver(for host: String) -> AnyPublisher<WellKnownResponse, Error> {
+        var components = URLComponents()
+        components.host = host
+        components.scheme = "https"
+        components.path = "/.well-known/matrix/client"
+        
+        guard let url = components.url else {
+            let error = ErrorResponse(code: "HOSTNAME_ERROR", message: "Invalid URL derived from the supplied host.")
+            return Fail<WellKnownResponse, Error>(error: error).eraseToAnyPublisher()
+        }
+        
+        let request = URLRequest(url: url)
+        
+        return URLSession.shared.dataTaskPublisher(for: request)
+            .map(\.data)
+            .decode(type: WellKnownResponse.self, decoder: JSONDecoder())
+            .eraseToAnyPublisher()
+    }
+    
     // 5.5.2 POST /_matrix/client/r0/login
     public func login(username: String, password: String, displayName: String? = nil) -> AnyPublisher<LoginUserResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/login")
