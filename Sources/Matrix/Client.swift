@@ -51,7 +51,7 @@ public class Client {
         components.path = "/.well-known/matrix/client"
         
         guard let url = components.url else {
-            let error = ErrorResponse(code: "HOSTNAME_ERROR", message: "Invalid URL derived from the supplied host.")
+            let error = ErrorResponse(code: "FAIL_PROMPT", message: "Auto-discovery failed due to invalid/empty data.")
             return Fail<WellKnownResponse, Error>(error: error).eraseToAnyPublisher()
         }
         
