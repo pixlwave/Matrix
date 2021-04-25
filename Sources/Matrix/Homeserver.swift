@@ -51,6 +51,6 @@ public struct Homeserver: Codable {
     }
     
     public static var `default`: Homeserver {
-        Homeserver(scheme: "https", host: "matrix-federation.matrix.org", port: 443)
+        Homeserver(scheme: "https", host: "matrix-client.matrix.org", port: 443)
     }
 }
