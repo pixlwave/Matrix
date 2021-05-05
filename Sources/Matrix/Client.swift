@@ -159,24 +159,26 @@ public class Client {
         return apiPublisher(with: request, as: MessagesResponse.self)
     }
     
-    #warning("This is actually using a deprecated POST call and not creating a transaction ID.")
     // 9.6.2 PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
-    public func sendMessage(_ message: String, in roomID: String) -> AnyPublisher<SendResponse, MatrixError> {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message")
+    public func sendMessage(_ message: String, in roomID: String, with transactionID: String) -> AnyPublisher<SendResponse, MatrixError> {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message/\(transactionID)")
+        
         var request = urlRequest(url: components.url!, withAuthorization: true)
-        request.httpMethod = "POST"
+        request.httpMethod = "PUT"
+        
         let bodyObject = SendMessageBody(type: "m.text", body: message)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
         return apiPublisher(with: request, as: SendResponse.self)
     }
     
-    #warning("This is actually using a deprecated POST call and not creating a transaction ID.")
     // 9.6.2 PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
-    public func sendReaction(_ reaction: String, to eventID: String, in roomID: String) -> AnyPublisher<SendResponse, MatrixError> {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction")
+    public func sendReaction(_ reaction: String, to eventID: String, in roomID: String, with transactionID: String) -> AnyPublisher<SendResponse, MatrixError> {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction/\(transactionID)")
+        
         var request = urlRequest(url: components.url!, withAuthorization: true)
-        request.httpMethod = "POST"
+        request.httpMethod = "PUT"
+        
         let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: eventID, key: reaction))
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
