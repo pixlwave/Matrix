@@ -6,7 +6,7 @@ public struct RoomEvent: Codable {
     public let eventID: String
     public let sender: String
     public let date: Date
-//    public let unsigned: UnsignedData
+    public let unsigned: UnsignedData?
     
     // state events
     public let stateKey: String?
@@ -20,6 +20,7 @@ public struct RoomEvent: Codable {
         case eventID = "event_id"
         case sender
         case date = "origin_server_ts"
+        case unsigned
         case stateKey = "state_key"
         case redacts
     }
@@ -70,6 +71,14 @@ public struct RoomEvent: Codable {
                 let container = try decoder.singleValueContainer()
                 self = Membership(rawValue: (try? container.decode(String.self)) ?? "") ?? .unknown
             }
+        }
+    }
+    
+    public struct UnsignedData: Codable {
+        public let transactionID: String?
+        
+        enum CodingKeys: String, CodingKey {
+            case transactionID = "transaction_id"
         }
     }
 }
