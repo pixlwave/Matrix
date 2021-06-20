@@ -2,7 +2,7 @@ import Foundation
 
 public struct SyncResponse: Codable {
     public let nextBatch: String
-    public let rooms: Rooms
+    public let rooms: Rooms?
 //    public let presence: Presence
 //    public let account_data: AccountData
 //    public let to_device: ToDevice
@@ -15,9 +15,9 @@ public struct SyncResponse: Codable {
     }
     
     public struct Rooms: Codable {
-        public let joined: [String: JoinedRoom]
-//        public let invite: InvitedRoom
-        public let left: [String: LeftRoom]
+        public let joined: [String: JoinedRoom]?
+//        public let invite: [String: InvitedRoom]?
+        public let left: [String: LeftRoom]?
         
         enum CodingKeys: String, CodingKey {
             case joined = "join"
@@ -29,11 +29,11 @@ public struct SyncResponse: Codable {
 
 public struct JoinedRoom: Codable {
     public let summary: RoomSummary?
-    public let state: State
-    public let timeline: Timeline
-//    public let ephemeral: Ephemeral
-//    public let account_data: AccountData
-    public let unreadNotifications: UnreadNotificationCounts
+    public let state: State?
+    public let timeline: Timeline?
+//    public let ephemeral: Ephemeral?
+//    public let account_data: AccountData?
+    public let unreadNotifications: UnreadNotificationCounts?
     
     enum CodingKeys: String, CodingKey {
         case summary
@@ -55,12 +55,12 @@ public struct JoinedRoom: Codable {
     }
     
     public struct State: Codable {
-        public let events: [RoomEvent]
+        public let events: [RoomEvent]?
     }
     
     public struct Timeline: Codable {
-        public let events: [RoomEvent]
-        public let isLimited: Bool
+        public let events: [RoomEvent]?
+        public let isLimited: Bool?
         public let previousBatch: String?
         
         enum CodingKeys: String, CodingKey {
@@ -71,8 +71,8 @@ public struct JoinedRoom: Codable {
     }
     
     public struct UnreadNotificationCounts: Codable {
-        public let highlightCount: Int
-        public let notificationCount: Int
+        public let highlightCount: Int?
+        public let notificationCount: Int?
         
         enum CodingKeys: String, CodingKey {
             case highlightCount = "highlight_count"

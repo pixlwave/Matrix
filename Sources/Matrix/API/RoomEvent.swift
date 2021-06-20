@@ -8,7 +8,7 @@ public struct RoomEvent: Codable {
     public let date: Date
     public let unsigned: UnsignedData?
     
-    // state events
+    // state events (required)
     public let stateKey: String?
     
     // m.room.redaction
