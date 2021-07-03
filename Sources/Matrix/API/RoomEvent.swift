@@ -26,9 +26,12 @@ public struct RoomEvent: Codable {
     }
     
     public struct RoomEventContent: Codable {
-        // m.room.message
+        // m.room.message (required)
         public let body: String?
+        public let type: MessageType?
+        // (optional)
         public let relationship: Relationship?
+        public let url: URL?
         
         // edit event
         public let newContent: NewContent?
@@ -48,7 +51,9 @@ public struct RoomEvent: Codable {
         
         enum CodingKeys: String, CodingKey {
             case body
+            case type = "msgtype"
             case relationship = "m.relates_to"
+            case url
             case newContent = "m.new_content"
             case reason
             
@@ -62,6 +67,15 @@ public struct RoomEvent: Codable {
         
         public struct NewContent: Codable {
             public let body: String?
+        }
+        
+        public enum MessageType: String, Codable {
+            case text, emote, notice, image, file, audio, location, video, unknown
+            
+            public init(from decoder: Decoder) throws {
+                let container = try decoder.singleValueContainer()
+                self = MessageType(rawValue: (try? container.decode(String.self)) ?? "") ?? .unknown
+            }
         }
         
         public enum Membership: String, Codable {

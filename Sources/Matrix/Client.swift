@@ -207,4 +207,28 @@ public class Client {
             .map { $0?.statusCode == 200 }
             .eraseToAnyPublisher()
     }
+    
+    // 13.8.2.2 URL for path /_matrix/media/r0/download/{serverName}/{mediaId}
+    public func mediaDownloadURL(fromMXC url: URL) -> URL {
+        guard
+            url.scheme == "mxc",
+            let host = url.host,
+            let mediaID = url.pathComponents.last   // pathComponents are ["/", "mediaID"]
+        else { return url }
+        
+        let components = urlComponents(path: "/_matrix/media/r0/download/\(host)/\(mediaID)")
+        
+        return components.url!
+    }
+    
+    // 13.8.2.2 GET /_matrix/media/r0/download/{serverName}/{mediaId}
+    public func downloadMedia(at url: URL) -> AnyPublisher<Data, URLError> {
+        let requestURL = mediaDownloadURL(fromMXC: url)
+        
+        let request = urlRequest(url: requestURL, withAuthorization: false)
+        
+        return URLSession.shared.dataTaskPublisher(for: request)
+            .map(\.data)
+            .eraseToAnyPublisher()
+    }
 }
