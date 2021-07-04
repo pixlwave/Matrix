@@ -70,7 +70,15 @@ public struct RoomEvent: Codable {
         }
         
         public enum MessageType: String, Codable {
-            case text, emote, notice, image, file, audio, location, video, unknown
+            case text = "m.text"
+            case emote = "m.emote"
+            case notice = "m.notice"
+            case image = "m.image"
+            case file = "m.file"
+            case audio = "m.audio"
+            case location = "m.location"
+            case video = "m.video"
+            case unknown
             
             public init(from decoder: Decoder) throws {
                 let container = try decoder.singleValueContainer()
