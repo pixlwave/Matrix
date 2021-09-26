@@ -7,6 +7,12 @@ public class Client {
     
     public var accessToken: String?
     
+    #warning("Is this the best place to set these?")
+    public static var eventTypes: [RoomEvent.Type] = [
+        RoomMessageEvent.self, RoomReactionEvent.self, RoomRedactionEvent.self,
+        RoomMemberEvent.self, RoomNameEvent.self, RoomEncryptionEvent.self
+    ]
+    
     public init() { }
     
     private func urlComponents(path: String) -> URLComponents {

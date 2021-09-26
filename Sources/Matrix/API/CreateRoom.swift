@@ -1,6 +1,6 @@
 import Foundation
 
-struct CreateRoomBody: Codable {
+struct CreateRoomBody: Encodable {
     let name: String
     let roomAliasName: String?
     
@@ -11,7 +11,7 @@ struct CreateRoomBody: Codable {
 }
 
 
-public struct CreateRoomResponse: Codable {
+public struct CreateRoomResponse: Decodable {
     public let roomID: String
     
     enum CodingKeys: String, CodingKey {

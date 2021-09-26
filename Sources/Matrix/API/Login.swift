@@ -1,6 +1,6 @@
 import Foundation
 
-struct LoginUserBody: Codable {
+struct LoginUserBody: Encodable {
     let type: String
     let username: String
     let password: String
@@ -15,7 +15,7 @@ struct LoginUserBody: Codable {
 }
 
 
-public struct LoginUserResponse: Codable {
+public struct LoginUserResponse: Decodable {
     public let userID: String
     public let accessToken: String
     public let homeserver: String

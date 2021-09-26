@@ -1,6 +1,6 @@
 import Foundation
 
-public struct WellKnownResponse: Codable {
+public struct WellKnownResponse: Decodable {
     public let homeserver: HomeserverInformation
     public let identityServer: IdentityServerInformation?
     
@@ -9,7 +9,7 @@ public struct WellKnownResponse: Codable {
         case identityServer = "m.identity_server"
     }
     
-    public struct HomeserverInformation: Codable {
+    public struct HomeserverInformation: Decodable {
         public let baseURL: URL
         
         enum CodingKeys: String, CodingKey {
@@ -17,7 +17,7 @@ public struct WellKnownResponse: Codable {
         }
     }
     
-    public struct IdentityServerInformation: Codable {
+    public struct IdentityServerInformation: Decodable {
         public let baseURL: URL
         
         enum CodingKeys: String, CodingKey {

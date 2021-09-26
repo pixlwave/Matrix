@@ -1,6 +1,6 @@
 import Foundation
 
-struct RegisterUserBody: Codable {
+struct RegisterUserBody: Encodable {
     let username: String
     let password: String
     let auth: [String: String]
@@ -15,7 +15,7 @@ struct RegisterUserBody: Codable {
 }
 
 
-public struct RegisterUserResponse: Codable {
+public struct RegisterUserResponse: Decodable {
     public let userID: String
     public let accessToken: String
     public let homeserver: String

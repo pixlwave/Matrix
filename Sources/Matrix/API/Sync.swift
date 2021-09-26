@@ -1,6 +1,6 @@
 import Foundation
 
-public struct SyncResponse: Codable {
+public struct SyncResponse: Decodable {
     public let nextBatch: String
     public let rooms: Rooms?
 //    public let presence: Presence
@@ -14,7 +14,7 @@ public struct SyncResponse: Codable {
         case rooms
     }
     
-    public struct Rooms: Codable {
+    public struct Rooms: Decodable {
         public let joined: [String: JoinedRoom]?
 //        public let invite: [String: InvitedRoom]?
         public let left: [String: LeftRoom]?
@@ -27,7 +27,7 @@ public struct SyncResponse: Codable {
 }
 
 
-public struct JoinedRoom: Codable {
+public struct JoinedRoom: Decodable {
     public let summary: RoomSummary?
     public let state: State?
     public let timeline: Timeline?
@@ -42,7 +42,7 @@ public struct JoinedRoom: Codable {
         case unreadNotifications = "unread_notifications"
     }
     
-    public struct RoomSummary: Codable {
+    public struct RoomSummary: Decodable {
         public let heroes: [String]?
         public let joinedMemberCount: Int?
         public let invitedMemberCount: Int?
@@ -54,12 +54,14 @@ public struct JoinedRoom: Codable {
         }
     }
     
-    public struct State: Codable {
-        public let events: [RoomEvent]?
+    public struct State: Decodable {
+        @RoomEventArray
+        public var events: [RoomEvent]?
     }
     
-    public struct Timeline: Codable {
-        public let events: [RoomEvent]?
+    public struct Timeline: Decodable {
+        @RoomEventArray
+        public var events: [RoomEvent]?
         public let isLimited: Bool?
         public let previousBatch: String?
         
@@ -70,7 +72,7 @@ public struct JoinedRoom: Codable {
         }
     }
     
-    public struct UnreadNotificationCounts: Codable {
+    public struct UnreadNotificationCounts: Decodable {
         public let highlightCount: Int?
         public let notificationCount: Int?
         
@@ -82,7 +84,7 @@ public struct JoinedRoom: Codable {
 }
 
 
-public struct LeftRoom: Codable {
+public struct LeftRoom: Decodable {
 //    public let state: State
 //    public let timeline: Timeline
 //    public let account_data: AccountData
