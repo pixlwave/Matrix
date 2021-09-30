@@ -26,13 +26,13 @@ enum RoomEventDecodableError: Error {
 
 extension KeyedDecodingContainer {
     // The synthesized decoding for RoomEventArray will throw if the key is missing. This fixes that.
-    func decode<T>(_ type: RoomEventArray<T>.Type, forKey key: Self.Key) throws -> RoomEventArray<T> {
-        return try decodeIfPresent(type, forKey: key) ?? RoomEventArray<T>(wrappedValue: nil)
+    func decode<T>(_ type: DecodableRoomEvents<T>.Type, forKey key: Self.Key) throws -> DecodableRoomEvents<T> {
+        return try decodeIfPresent(type, forKey: key) ?? DecodableRoomEvents<T>(wrappedValue: nil)
     }
 }
 
 @propertyWrapper
-public struct RoomEventArray<Value: Collection>: Decodable where Value.Element == RoomEvent {
+public struct DecodableRoomEvents<Value: Collection>: Decodable where Value.Element == RoomEvent {
     public var wrappedValue: Value?
     
     private struct RoomEventWrapper<T>: Decodable {

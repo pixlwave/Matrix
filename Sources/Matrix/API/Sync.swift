@@ -55,12 +55,12 @@ public struct JoinedRoom: Decodable {
     }
     
     public struct State: Decodable {
-        @RoomEventArray
+        @DecodableRoomEvents
         public var events: [RoomEvent]?
     }
     
     public struct Timeline: Decodable {
-        @RoomEventArray
+        @DecodableRoomEvents
         public var events: [RoomEvent]?
         public let isLimited: Bool?
         public let previousBatch: String?

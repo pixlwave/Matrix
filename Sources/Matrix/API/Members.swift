@@ -1,7 +1,7 @@
 import Foundation
 
 public struct MembersResponse: Decodable {
-    @RoomEventArray
+    @DecodableRoomEvents
     public var members: [RoomEvent]?
     
     enum CodingKeys: String, CodingKey {

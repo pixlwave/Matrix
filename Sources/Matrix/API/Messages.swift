@@ -3,9 +3,9 @@ import Foundation
 public struct MessagesResponse: Decodable {
     public let startToken: String?
     public let endToken: String?
-    @RoomEventArray
+    @DecodableRoomEvents
     public var events: [RoomEvent]?
-    @RoomEventArray
+    @DecodableRoomEvents
     public var stateEvents: [RoomEvent]?
     
     enum CodingKeys: String, CodingKey {
