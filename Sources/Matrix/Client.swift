@@ -207,6 +207,7 @@ public class Client {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/receipt/m.read/\(eventID)")
         var request = urlRequest(url: components.url!, withAuthorization: true)
         request.httpMethod = "POST"
+        request.httpBody = "{}".data(using: .utf8)
         
         return URLSession.shared.dataTaskPublisher(for: request)
             .map { $0.response as? HTTPURLResponse }
