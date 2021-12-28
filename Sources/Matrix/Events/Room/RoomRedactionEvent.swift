@@ -1,7 +1,7 @@
 import Foundation
 
 public struct RoomRedactionEvent: RoomEvent {
-    public static var type = "m.room.redaction"
+    public static let type = "m.room.redaction"
     
     public let content: Content
     public let type: String

@@ -132,11 +132,19 @@ public class Client {
     }
     
     // 9.5.2 GET /_matrix/client/r0/rooms/{roomId}/state/{eventType}/{stateKey}
-    public func getName(of roomID: String) -> AnyPublisher<RoomNameResponse, MatrixError> {
+    public func getCreateEvent(for roomID: String) -> AnyPublisher<RoomCreateEvent.Content, MatrixError> {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/state/m.room.create/")
+        let request = urlRequest(url: components.url!, withAuthorization: true)
+        
+        return apiPublisher(with: request, as: RoomCreateEvent.Content.self)
+    }
+    
+    // 9.5.2 GET /_matrix/client/r0/rooms/{roomId}/state/{eventType}/{stateKey}
+    public func getName(of roomID: String) -> AnyPublisher<RoomNameEvent.Content, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/state/m.room.name/")
         let request = urlRequest(url: components.url!, withAuthorization: true)
         
-        return apiPublisher(with: request, as: RoomNameResponse.self)
+        return apiPublisher(with: request, as: RoomNameEvent.Content.self)
     }
     
     // 9.5.4 GET /_matrix/client/r0/rooms/{roomId}/members
@@ -166,13 +174,18 @@ public class Client {
     }
     
     // 9.6.2 PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
-    public func sendMessage(_ message: String, in roomID: String, with transactionID: String) -> AnyPublisher<SendResponse, MatrixError> {
+    public func sendMessage(_ message: String, in roomID: String, asReplyTo eventID: String? = nil, with transactionID: String) -> AnyPublisher<SendResponse, MatrixError> {
         let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message/\(transactionID)")
         
         var request = urlRequest(url: components.url!, withAuthorization: true)
         request.httpMethod = "PUT"
         
-        let bodyObject = SendMessageBody(type: "m.text", body: message)
+        var relationship: Relationship?
+        if let eventID = eventID {
+            relationship = Relationship(type: .reply, eventID: eventID)
+        }
+        
+        let bodyObject = SendMessageBody(type: "m.text", body: message, relationship: relationship)
         request.httpBody = try? JSONEncoder().encode(bodyObject)
         
         return apiPublisher(with: request, as: SendResponse.self)

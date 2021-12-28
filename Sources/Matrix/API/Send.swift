@@ -3,10 +3,12 @@ import Foundation
 struct SendMessageBody: Encodable {
     let type: String
     let body: String
+    var relationship: Relationship? = nil
     
     enum CodingKeys: String, CodingKey {
         case type = "msgtype"
         case body
+        case relationship = "m.relates_to"
     }
 }
 
