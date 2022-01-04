@@ -74,6 +74,18 @@ public struct MessageContent: Codable {
 
 extension MessageContent {
     public init(body: String, type: MessageType, relationship: Relationship? = nil) {
-        self.init(body: body, type: type, format: nil, formattedBody: nil, relationship: relationship, mediaURL: nil, mediaInfo: nil, newContent: nil)
+        self.init(body: body, type: type,
+                  format: nil, formattedBody: nil,
+                  relationship: relationship,
+                  mediaURL: nil, mediaInfo: nil,
+                  newContent: nil)
+    }
+    
+    public init(body: String, type: MessageType, htmlBody: String, relationship: Relationship? = nil) {
+        self.init(body: body, type: type,
+                  format: .html, formattedBody: htmlBody,
+                  relationship: relationship,
+                  mediaURL: nil, mediaInfo: nil,
+                  newContent: nil)
     }
 }
