@@ -19,7 +19,7 @@ public struct RoomReactionEvent: RoomEvent {
         case unsigned
     }
     
-    public struct Content: Decodable {
+    public struct Content: Codable {
         public let relationship: Relationship?
         
         enum CodingKeys: String, CodingKey {

@@ -174,34 +174,26 @@ public class Client {
     }
     
     // 9.6.2 PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
-    public func sendMessage(_ message: String, in roomID: String, asReplyTo eventID: String? = nil, with transactionID: String) -> AnyPublisher<SendResponse, MatrixError> {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.room.message/\(transactionID)")
+    public func send<Content: Encodable>(_ content: Content, as eventType: RoomEvent.Type, in roomID: String, with transactionID: String) -> AnyPublisher<SendResponse, MatrixError> {
+        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/\(eventType.type)/\(transactionID)")
         
         var request = urlRequest(url: components.url!, withAuthorization: true)
         request.httpMethod = "PUT"
-        
-        var relationship: Relationship?
-        if let eventID = eventID {
-            relationship = Relationship(type: .reply, eventID: eventID)
-        }
-        
-        let bodyObject = SendMessageBody(type: "m.text", body: message, relationship: relationship)
-        request.httpBody = try? JSONEncoder().encode(bodyObject)
+        request.httpBody = try? JSONEncoder().encode(content)
         
         return apiPublisher(with: request, as: SendResponse.self)
     }
     
-    // 9.6.2 PUT /_matrix/client/r0/rooms/{roomId}/send/{eventType}/{txnId}
+    // 9.6.2 convenience method for m.room.message
+    public func sendMessage(_ message: String, in roomID: String, with transactionID: String) -> AnyPublisher<SendResponse, MatrixError> {
+        let content = MessageContent(body: message, type: .text)
+        return send(content, as: RoomMessageEvent.self, in: roomID, with: transactionID)
+    }
+    
+    // 9.6.2 convenience method for m.redaction
     public func sendReaction(_ reaction: String, to eventID: String, in roomID: String, with transactionID: String) -> AnyPublisher<SendResponse, MatrixError> {
-        let components = urlComponents(path: "/_matrix/client/r0/rooms/\(roomID)/send/m.reaction/\(transactionID)")
-        
-        var request = urlRequest(url: components.url!, withAuthorization: true)
-        request.httpMethod = "PUT"
-        
-        let bodyObject = SendReactionBody(relationship: Relationship(type: .annotation, eventID: eventID, key: reaction))
-        request.httpBody = try? JSONEncoder().encode(bodyObject)
-        
-        return apiPublisher(with: request, as: SendResponse.self)
+        let content = RoomReactionEvent.Content(relationship: Relationship(type: .annotation, eventID: eventID, key: reaction))
+        return send(content, as: RoomReactionEvent.self, in: roomID, with: transactionID)
     }
     
     // 10.1.1 POST /_matrix/client/r0/createRoom
