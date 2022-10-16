@@ -18,13 +18,16 @@ struct LoginUserBody: Encodable {
 public struct LoginUserResponse: Decodable {
     public let userID: String
     public let accessToken: String
-    public let homeserver: String
     public let deviceID: String
+    
+    @available(*, deprecated, message: "Extract the server_name from userID by splitting at the first colon.")
+    public let homeserver: String?
     
     enum CodingKeys: String, CodingKey {
         case userID = "user_id"
         case accessToken = "access_token"
-        case homeserver = "home_server"
         case deviceID = "device_id"
+        
+        case homeserver = "home_server"
     }
 }
