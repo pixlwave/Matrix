@@ -76,7 +76,7 @@ public class Client {
         var request = urlRequest(url: components.url!, withAuthorization: false)
         request.httpMethod = "POST"
         
-        let body = LoginUserBody(type: "m.login.password", username: username, password: password, displayName: displayName)
+        let body = LoginUserBody(type: "m.login.password", identifier: .user(username), password: password, displayName: displayName)
         request.httpBody = try? JSONEncoder().encode(body)
         
         return apiPublisher(with: request, as: LoginUserResponse.self)

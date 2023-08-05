@@ -2,15 +2,33 @@ import Foundation
 
 struct LoginUserBody: Encodable {
     let type: String
-    let username: String
+    let identifier: UserIdentifier
     let password: String
     let displayName: String?
     
     enum CodingKeys: String, CodingKey {
         case type
-        case username = "user"
+        case identifier
         case password
         case displayName = "initial_device_display_name"
+    }
+    
+    public enum UserIdentifier: Encodable {
+        case user(String)
+        
+        enum CodingKeys: String, CodingKey {
+            case user
+            case type
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            switch self {
+            case .user(let id):
+                try container.encode("m.id.user", forKey: .type)
+                try container.encode(id, forKey: .user)
+            }
+        }
     }
 }
 
