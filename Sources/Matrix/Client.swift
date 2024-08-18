@@ -220,24 +220,22 @@ public class Client {
             .eraseToAnyPublisher()
     }
     
-    // 13.8.2.2 URL for path /_matrix/media/r0/download/{serverName}/{mediaId}
-    public func mediaDownloadURL(fromMXC url: URL) -> URL {
+    // Authenticated URL request for path /_matrix/client/v1/media/download/{serverName}/{mediaId}
+    public func mediaDownloadURLRequest(fromMXC url: URL) -> URLRequest {
         guard
             url.scheme == "mxc",
             let host = url.host,
             let mediaID = url.pathComponents.last   // pathComponents are ["/", "mediaID"]
-        else { return url }
+        else { return URLRequest(url: url) }
         
-        let components = urlComponents(path: "/_matrix/media/r0/download/\(host)/\(mediaID)")
+        let components = urlComponents(path: "/_matrix/client/v1/media/download/\(host)/\(mediaID)")
         
-        return components.url!
+        return urlRequest(url: components.url!, withAuthorization: true)
     }
     
-    // 13.8.2.2 GET /_matrix/media/r0/download/{serverName}/{mediaId}
+    // GET /_matrix/client/v1/media/download/{serverName}/{mediaId}
     public func downloadMedia(at url: URL) -> AnyPublisher<Data, URLError> {
-        let requestURL = mediaDownloadURL(fromMXC: url)
-        
-        let request = urlRequest(url: requestURL, withAuthorization: false)
+        let request = mediaDownloadURLRequest(fromMXC: url)
         
         return URLSession.shared.dataTaskPublisher(for: request)
             .map(\.data)
