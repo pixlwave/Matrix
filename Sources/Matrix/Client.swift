@@ -25,7 +25,9 @@ public class Client {
     private func urlRequest(url: URL, withAuthorization: Bool) -> URLRequest {
         var request = URLRequest(url: url)
         
-        if withAuthorization, let accessToken = accessToken {
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        if withAuthorization, let accessToken {
             request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         }
         
